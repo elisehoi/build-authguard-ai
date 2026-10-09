@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react'
 import { AlertAiPanel } from '@/components/authguard/alert-ai-panel'
 import { Explain } from '@/components/authguard/explain'
 import { ExplainText } from '@/components/authguard/explain-text'
+import { MarkRead } from '@/components/authguard/mark-read'
 import { SeverityBadge } from '@/components/authguard/severity-badge'
 import { LocalTime } from '@/components/local-time'
 import { RULE_TERMS } from '@/lib/authguard/glossary'
@@ -64,6 +65,7 @@ export default async function AlertPage({ params }: { params: Promise<{ id: stri
       </section>
 
       <AlertAiPanel alertId={alert.id} />
+      <MarkRead alertId={alert.id} />
     </>
   )
 }

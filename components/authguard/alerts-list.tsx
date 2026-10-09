@@ -3,7 +3,8 @@ import { LocalTime } from '@/components/local-time'
 import type { Alert } from '@/lib/detection/types'
 import { SeverityBadge } from './severity-badge'
 
-export function AlertsList({ alerts }: { alerts: Alert[] }) {
+export function AlertsList({ alerts, newIds = [] }: { alerts: Alert[]; newIds?: string[] }) {
+  const unread = new Set(newIds)
   if (alerts.length === 0) {
     return (
       <div className="rounded-lg border border-dashed p-8 text-center">
@@ -26,6 +27,9 @@ export function AlertsList({ alerts }: { alerts: Alert[] }) {
             <div className="flex flex-wrap items-center gap-2">
               <SeverityBadge severity={alert.severity} />
               <span className="font-medium">{alert.title}</span>
+              {unread.has(alert.id) && (
+                <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-primary">New</span>
+              )}
             </div>
             <p className="text-sm leading-relaxed text-muted-foreground">{alert.summary}</p>
             <p className="flex flex-wrap gap-x-3 font-mono text-xs text-muted-foreground">

@@ -1,8 +1,10 @@
 import { createHash, timingSafeEqual } from 'node:crypto'
+import { after } from 'next/server'
 import { z } from 'zod'
 import { getServerEnv } from '@/lib/env'
-import { jsonError, parseJsonBody, routeError } from '@/lib/http'
+import { getRequestOrigin, jsonError, parseJsonBody, routeError } from '@/lib/http'
 import { AuthGuardEventsRepository } from '@/lib/repositories/authguard-events-repository'
+import { notifyForEvent } from '@/lib/services/notification-service'
 import { createAuthGuardAdminClient } from '@/lib/supabase/authguard/admin'
 import { EVENT_TYPES } from '@/lib/types'
 
@@ -65,6 +67,9 @@ export async function POST(request: Request) {
       return Response.json({ stored: false, reason: 'duplicate' }, { status: 202 })
     }
     const id = await repository.insert(event)
+    // Detection, notification and email run after the response is sent.
+    const origin = getRequestOrigin(request.headers)
+    after(() => notifyForEvent(id, origin).catch((error) => console.error(`[notifications] ${(error as Error).message}`)))
     return Response.json({ stored: true, id }, { status: 201 })
   } catch (error) {
     return routeError(error, 'events-api')

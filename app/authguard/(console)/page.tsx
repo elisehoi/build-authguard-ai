@@ -1,12 +1,14 @@
 import { AlertsList } from '@/components/authguard/alerts-list'
 import { EventsTable } from '@/components/authguard/events-table'
 import { ownsDemoApp } from '@/lib/services/console-access'
-import { loadSnapshot } from '@/lib/services/console-data'
+import { loadSnapshot, loadUnreadNotifications } from '@/lib/services/console-data'
 
 export default async function ConsolePage() {
   // The layout shows the empty state instead; pages may still render in parallel.
   if (!(await ownsDemoApp())) return null
   const { events, alerts } = await loadSnapshot()
+  const unread = await loadUnreadNotifications().catch(() => ({ items: [] }))
+  const newIds = unread.items.map((item) => item.alertId)
   const counts = {
     high: alerts.filter((alert) => alert.severity === 'high').length,
     medium: alerts.filter((alert) => alert.severity === 'medium').length,
@@ -37,7 +39,7 @@ export default async function ConsolePage() {
 
       <section aria-labelledby="alerts" className="flex flex-col gap-3">
         <h2 id="alerts" className="text-lg font-semibold">Alerts</h2>
-        <AlertsList alerts={alerts} />
+        <AlertsList alerts={alerts} newIds={newIds} />
       </section>
 
       <section aria-labelledby="events" className="flex flex-col gap-3">

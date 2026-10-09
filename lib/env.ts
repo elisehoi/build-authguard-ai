@@ -27,6 +27,12 @@ const groups = {
     // with a lookup table.
     IP_HASH_SALT: z.string().min(16),
   }),
+  // Alert emails. Both optional: without them, notifications are still
+  // recorded and shown in the console, just not emailed.
+  notifications: z.object({
+    RESEND_API_KEY: z.string().min(1).optional(),
+    AUTHGUARD_ALERT_EMAIL: z.email().optional(),
+  }),
   authguardConsole: z.object({
     AUTHGUARD_ADMIN_EMAILS: z
       .string()

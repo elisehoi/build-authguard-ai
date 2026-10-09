@@ -3,6 +3,7 @@ import { cache } from 'react'
 import { createDefaultDetectionEngine } from '@/lib/detection/engine'
 import type { Alert } from '@/lib/detection/types'
 import { AuthGuardEventsRepository } from '@/lib/repositories/authguard-events-repository'
+import { NotificationsRepository } from '@/lib/repositories/notifications-repository'
 import { createAuthGuardAdminClient } from '@/lib/supabase/authguard/admin'
 import type { AuthGuardEvent } from '@/lib/types'
 import { getConsoleAccess } from './console-access'
@@ -26,6 +27,31 @@ export const loadSnapshot = cache(async (): Promise<ConsoleSnapshot> => {
 export async function loadSession(sessionId: string): Promise<AuthGuardEvent[]> {
   await assertConsoleAdmin()
   return new AuthGuardEventsRepository(createAuthGuardAdminClient()).listForSession(sessionId)
+}
+
+export type UnreadNotification = { alertId: string; severity: 'medium' | 'high'; title: string; createdAt: string }
+
+// Unread alert notifications for the header bell and the "New" badges.
+// Titles come from the current snapshot; alerts older than 7 days keep a generic one.
+export const loadUnreadNotifications = cache(async (): Promise<{ count: number; items: UnreadNotification[] }> => {
+  await assertConsoleAdmin()
+  const repository = new NotificationsRepository(createAuthGuardAdminClient())
+  const [count, rows, { alerts }] = await Promise.all([repository.countUnread(), repository.listUnread(), loadSnapshot()])
+  const titles = new Map(alerts.map((alert) => [alert.id, alert.title]))
+  return {
+    count,
+    items: rows.map((row) => ({
+      alertId: row.alert_id,
+      severity: row.severity,
+      title: titles.get(row.alert_id) ?? `Alert ${row.alert_id.slice(0, 8)}`,
+      createdAt: row.created_at,
+    })),
+  }
+})
+
+export async function markNotificationRead(alertId: string): Promise<void> {
+  await assertConsoleAdmin()
+  await new NotificationsRepository(createAuthGuardAdminClient()).markRead(alertId)
 }
 
 // What the assistant is allowed to see: alerts and events, with hashes cut to a prefix.

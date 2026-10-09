@@ -47,6 +47,38 @@ export class AuthGuardEventsRepository {
     return z.array(authGuardEventSchema).parse(data)
   }
 
+  // Every recent event that can share an alert with `event`: same session,
+  // user ref or email hash, and (for invalid tokens) same hashed client.
+  // Separate queries instead of one .or() filter, so values are never parsed
+  // as filter syntax.
+  async listRelated(event: AuthGuardEvent): Promise<AuthGuardEvent[]> {
+    const since = new Date(Date.now() - WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString()
+    const base = () => this.db.from('authguard_events').select('*').eq('app_id', event.app_id).gte('occurred_at', since).limit(MAX_EVENTS)
+    const queries = [
+      event.session_id ? base().eq('session_id', event.session_id) : null,
+      event.user_ref ? base().eq('user_ref', event.user_ref) : null,
+      event.email_hash ? base().eq('email_hash', event.email_hash) : null,
+      event.event_type === 'token_invalid'
+        ? event.ip_hash
+          ? base().eq('event_type', 'token_invalid').eq('ip_hash', event.ip_hash)
+          : base().eq('event_type', 'token_invalid').is('ip_hash', null)
+        : null,
+    ].filter((query) => query !== null)
+
+    const byId = new Map<string, AuthGuardEvent>([[event.id, event]])
+    for (const { data, error } of await Promise.all(queries)) {
+      if (error) throw new Error(`Could not load related events: ${error.message}`)
+      for (const row of z.array(authGuardEventSchema).parse(data)) byId.set(row.id, row)
+    }
+    return [...byId.values()].sort((a, b) => Date.parse(a.occurred_at) - Date.parse(b.occurred_at))
+  }
+
+  async getById(id: string): Promise<AuthGuardEvent | null> {
+    const { data, error } = await this.db.from('authguard_events').select('*').eq('id', id).maybeSingle()
+    if (error) throw new Error(`Could not load event: ${error.message}`)
+    return data ? authGuardEventSchema.parse(data) : null
+  }
+
   async lastEventAt(appId: string): Promise<string | null> {
     const { data, error } = await this.db
       .from('authguard_events')

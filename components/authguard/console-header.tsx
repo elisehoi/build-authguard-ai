@@ -5,14 +5,18 @@ import { usePathname } from 'next/navigation'
 import { LogOut, ShieldCheck } from 'lucide-react'
 import { logout } from '@/app/authguard/auth/actions'
 import { Button } from '@/components/ui/button'
+import type { UnreadNotification } from '@/lib/services/console-data'
 import { cn } from '@/lib/utils'
+import { NotificationBell } from './notification-bell'
 
 const LINKS = [
   { href: '/authguard', label: 'Alerts and events', exact: true },
   { href: '/authguard/assistant', label: 'Assistant', exact: false },
 ] as const
 
-export function ConsoleHeader({ email }: { email: string }) {
+type ConsoleHeaderProps = { email: string; notifications?: { count: number; items: UnreadNotification[] } }
+
+export function ConsoleHeader({ email, notifications }: ConsoleHeaderProps) {
   const pathname = usePathname()
 
   return (
@@ -43,6 +47,7 @@ export function ConsoleHeader({ email }: { email: string }) {
           </nav>
         </div>
         <div className="flex items-center gap-3">
+          {notifications && <NotificationBell count={notifications.count} items={notifications.items} />}
           <span className="hidden max-w-56 truncate font-mono text-xs text-muted-foreground sm:block">{email}</span>
           <form action={logout}>
             <Button type="submit" variant="outline" size="sm">
