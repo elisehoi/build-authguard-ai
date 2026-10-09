@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { reportAuthAttempt } from '@/lib/authguard'
 import { getRequestOrigin } from '@/lib/http'
-import { safeNextPath } from '@/lib/safe-redirect'
+import { loginPathFor, safeNextPath } from '@/lib/safe-redirect'
 import { createClient } from '@/lib/supabase/server'
 
 // Google (and email links in PKCE mode) send the browser back here with a
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   const origin = getRequestOrigin(request.headers)
   const { searchParams } = request.nextUrl
   const next = safeNextPath(searchParams.get('next'))
-  const failure = (message: string) => NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(message)}`)
+  const failure = (message: string) => NextResponse.redirect(`${origin}${loginPathFor(next)}?error=${encodeURIComponent(message)}`)
 
   const providerError = searchParams.get('error_description') ?? searchParams.get('error')
   if (providerError) return failure(providerError)

@@ -2,6 +2,7 @@ import 'server-only'
 import type { SupabaseClient, User } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation'
 import { cache } from 'react'
+import { loginPathFor } from '@/lib/safe-redirect'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import type { SessionClaims } from '@/lib/authguard-sdk'
@@ -44,7 +45,7 @@ export const getAuthContext = cache(async (): Promise<AuthContext | null> => {
 
 export async function requireAuthContext(nextPath: string): Promise<AuthContext> {
   const context = await getAuthContext()
-  if (!context) redirect(`/login?next=${encodeURIComponent(nextPath)}`)
+  if (!context) redirect(`${loginPathFor(nextPath)}?next=${encodeURIComponent(nextPath)}`)
   return context
 }
 

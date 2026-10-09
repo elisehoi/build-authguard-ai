@@ -5,7 +5,8 @@ import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { reportAuthAttempt } from '@/lib/authguard'
 import { getRequestOrigin } from '@/lib/http'
-import { safeNextPath } from '@/lib/safe-redirect'
+import { AUTHGUARD_LOGIN, WERKSTATT_ACCOUNT, WERKSTATT_LOGIN } from '@/lib/routes'
+import { loginPathFor, safeNextPath } from '@/lib/safe-redirect'
 import { createClient } from '@/lib/supabase/server'
 
 export type AuthField = 'email' | 'password' | 'confirmPassword'
@@ -106,7 +107,7 @@ export async function signup(_prev: AuthFormState, formData: FormData): Promise<
   }
 
   // With email confirmation turned off, Supabase signs the user in immediately.
-  if (data.session) redirect('/dashboard')
+  if (data.session) redirect(WERKSTATT_ACCOUNT)
   return { status: 'check-email', email: parsed.data.email }
 }
 
@@ -117,21 +118,30 @@ export async function signInWithGoogle(formData: FormData): Promise<void> {
   const origin = getRequestOrigin(await headers())
   const next = safeNextPath(formData.get('next')?.toString())
   const callback = process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ?? `${origin}/auth/callback`
-  const redirectTo = next === '/dashboard' ? callback : `${callback}?next=${encodeURIComponent(next)}`
+  const redirectTo = next === WERKSTATT_ACCOUNT ? callback : `${callback}?next=${encodeURIComponent(next)}`
 
   const supabase = await createClient()
   const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } })
   if (error || !data.url) {
     console.error(`[auth] Google sign-in could not start: ${error?.code ?? 'no_url'}`)
-    redirect(`/login?error=${encodeURIComponent('Google sign-in is not available right now.')}`)
+    redirect(`${loginPathFor(next)}?error=${encodeURIComponent('Google sign-in is not available right now.')}`)
   }
   redirect(data.url)
 }
 
-export async function logout(): Promise<void> {
+async function signOut(): Promise<void> {
   const supabase = await createClient()
   // Revokes the session on the server too, so a copied refresh token dies
   // with it. A copied access token still works until it expires.
   await supabase.auth.signOut()
-  redirect('/login')
+}
+
+export async function logout(): Promise<void> {
+  await signOut()
+  redirect(WERKSTATT_LOGIN)
+}
+
+export async function logoutConsole(): Promise<void> {
+  await signOut()
+  redirect(AUTHGUARD_LOGIN)
 }

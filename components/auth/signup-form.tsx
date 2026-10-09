@@ -6,6 +6,7 @@ import { Loader2, MailCheck } from 'lucide-react'
 import { signup, type AuthFormState } from '@/app/auth/actions'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { WERKSTATT_LOGIN } from '@/lib/routes'
 import { FormField } from './form-field'
 import { GoogleButton } from './google-button'
 
@@ -70,7 +71,7 @@ export function SignupForm() {
       <GoogleButton />
       <p className="text-center text-sm text-muted-foreground">
         Already registered?{' '}
-        <Link href="/login" className="font-medium text-primary underline-offset-4 hover:underline">
+        <Link href={WERKSTATT_LOGIN} className="font-medium text-primary underline-offset-4 hover:underline">
           Log in
         </Link>
       </p>

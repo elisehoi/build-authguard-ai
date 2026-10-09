@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import { BrandMark } from '@/components/brand-mark'
 import { ButtonLink } from '@/components/button-link'
+import { WERKSTATT_ACCOUNT, WERKSTATT_LOGIN, WERKSTATT_SIGNUP } from '@/lib/routes'
 import { getAuthContext } from '@/lib/services/auth-context'
 
 const WORKSHOPS = [
@@ -20,11 +21,11 @@ export default async function HomePage() {
           <BrandMark />
           <nav aria-label="Account" className="flex items-center gap-2">
             {context ? (
-              <ButtonLink href="/account">My workshop notes</ButtonLink>
+              <ButtonLink href={WERKSTATT_ACCOUNT}>My workshop notes</ButtonLink>
             ) : (
               <>
-                <ButtonLink href="/login" variant="ghost">Log in</ButtonLink>
-                <ButtonLink href="/signup">Sign up</ButtonLink>
+                <ButtonLink href={WERKSTATT_LOGIN} variant="ghost">Log in</ButtonLink>
+                <ButtonLink href={WERKSTATT_SIGNUP}>Sign up</ButtonLink>
               </>
             )}
           </nav>
@@ -42,8 +43,8 @@ export default async function HomePage() {
             your own workshop journal.
           </p>
           <div className="flex flex-wrap gap-3">
-            <ButtonLink href={context ? '/account' : '/signup'} size="lg">{context ? 'Open my notes' : 'Sign up for classes'}</ButtonLink>
-            {!context && <ButtonLink href="/login" size="lg" variant="outline">Log in</ButtonLink>}
+            <ButtonLink href={context ? WERKSTATT_ACCOUNT : WERKSTATT_SIGNUP} size="lg">{context ? 'Open my notes' : 'Sign up for classes'}</ButtonLink>
+            {!context && <ButtonLink href={WERKSTATT_LOGIN} size="lg" variant="outline">Log in</ButtonLink>}
           </div>
         </section>
 

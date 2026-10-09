@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { z } from 'zod'
 import { getRequestOrigin } from '@/lib/http'
-import { safeNextPath } from '@/lib/safe-redirect'
+import { loginPathFor, safeNextPath } from '@/lib/safe-redirect'
 import { createClient } from '@/lib/supabase/server'
 
 const confirmSchema = z.object({
@@ -17,13 +17,13 @@ export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams
   const parsed = confirmSchema.safeParse({ token_hash: params.get('token_hash'), type: params.get('type') })
   if (!parsed.success) {
-    return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent('This confirmation link is invalid.')}`)
+    return NextResponse.redirect(`${origin}${loginPathFor(params.get('next'))}?error=${encodeURIComponent('This confirmation link is invalid.')}`)
   }
 
   const supabase = await createClient()
   const { error } = await supabase.auth.verifyOtp(parsed.data)
   if (error) {
-    return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error.message)}`)
+    return NextResponse.redirect(`${origin}${loginPathFor(params.get('next'))}?error=${encodeURIComponent(error.message)}`)
   }
   return NextResponse.redirect(`${origin}${safeNextPath(params.get('next'))}`)
 }

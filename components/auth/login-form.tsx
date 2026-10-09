@@ -6,6 +6,7 @@ import { Loader2 } from 'lucide-react'
 import { login, type AuthFormState } from '@/app/auth/actions'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { WERKSTATT_SIGNUP } from '@/lib/routes'
 import { FormField } from './form-field'
 import { GoogleButton } from './google-button'
 
@@ -47,7 +48,7 @@ export function LoginForm({ next, urlError }: { next?: string; urlError?: string
       <GoogleButton next={next} />
       <p className="text-center text-sm text-muted-foreground">
         New here?{' '}
-        <Link href="/signup" className="font-medium text-primary underline-offset-4 hover:underline">
+        <Link href={WERKSTATT_SIGNUP} className="font-medium text-primary underline-offset-4 hover:underline">
           Create an account
         </Link>
       </p>

@@ -4,6 +4,7 @@ import { AccountHeader } from '@/components/account/account-header'
 import { getAuthGuard, snapshotRequest } from '@/lib/authguard'
 import { getAuthContext, getVerifiedClaims } from '@/lib/services/auth-context'
 import { redirect } from 'next/navigation'
+import { WERKSTATT_ACCOUNT, WERKSTATT_LOGIN } from '@/lib/routes'
 
 // Supabase stores the session in cookies named sb-<ref>-auth-token (maybe chunked).
 async function hasAuthCookie(): Promise<boolean> {
@@ -22,7 +23,7 @@ export default async function AccountLayout({ children }: { children: React.Reac
 
   if (!context) {
     if (guard && cookiePresent) after(() => guard.tokenInvalid({ request }))
-    redirect('/login?next=%2Faccount')
+    redirect(`${WERKSTATT_LOGIN}?next=${encodeURIComponent(WERKSTATT_ACCOUNT)}`)
   }
 
   if (guard) {

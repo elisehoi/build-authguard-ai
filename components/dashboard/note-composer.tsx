@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useRef } from 'react'
 import { Loader2, Plus } from 'lucide-react'
-import { addNote, type NoteActionState } from '@/app/account/actions'
+import { addNote, type NoteActionState } from '@/app/werkstatt/account/actions'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'

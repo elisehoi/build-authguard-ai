@@ -2,12 +2,13 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { AsideNote, AuthShell } from '@/components/auth/auth-shell'
 import { SignupForm } from '@/components/auth/signup-form'
+import { WERKSTATT_ACCOUNT } from '@/lib/routes'
 import { getAuthContext } from '@/lib/services/auth-context'
 
 export const metadata: Metadata = { title: 'Create account' }
 
 export default async function SignupPage() {
-  if (await getAuthContext()) redirect('/account')
+  if (await getAuthContext()) redirect(WERKSTATT_ACCOUNT)
 
   return (
     <AuthShell

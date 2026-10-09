@@ -1,10 +1,11 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { getPublicEnv } from '@/lib/env.public'
+import { AUTHGUARD_HOME, AUTHGUARD_LOGIN, WERKSTATT_ACCOUNT } from '@/lib/routes'
 import { loginPathFor } from '@/lib/safe-redirect'
 
-export const PROTECTED_PREFIXES = ['/werkstatt/account', '/werkstatt/admin', '/authguard'] as const
-const PUBLIC_EXCEPTIONS = ['/authguard/login'] as const
+export const PROTECTED_PREFIXES = [WERKSTATT_ACCOUNT, '/werkstatt/admin', AUTHGUARD_HOME] as const
+const PUBLIC_EXCEPTIONS = [AUTHGUARD_LOGIN] as const
 
 function matchesPrefix(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`)

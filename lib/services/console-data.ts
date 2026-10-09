@@ -5,16 +5,26 @@ import type { Alert } from '@/lib/detection/types'
 import { AuthGuardEventsRepository } from '@/lib/repositories/authguard-events-repository'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { AuthGuardEvent } from '@/lib/types'
+import { getConsoleAccess } from './console-access'
 
 export type ConsoleSnapshot = { events: AuthGuardEvent[]; alerts: Alert[] }
 
+// These loaders read every user's events with the service-role client, so they
+// re-check admin access themselves instead of trusting each caller to do it.
+async function assertConsoleAdmin(): Promise<void> {
+  const access = await getConsoleAccess()
+  if (access.status !== 'ok') throw new Error(`AuthGuard console access denied (${access.status})`)
+}
+
 // Alerts are computed on read from the stored events; nothing about them is persisted.
 export const loadSnapshot = cache(async (): Promise<ConsoleSnapshot> => {
+  await assertConsoleAdmin()
   const events = await new AuthGuardEventsRepository(createAdminClient()).listRecent()
   return { events, alerts: createDefaultDetectionEngine().run(events) }
 })
 
 export async function loadSession(sessionId: string): Promise<AuthGuardEvent[]> {
+  await assertConsoleAdmin()
   return new AuthGuardEventsRepository(createAdminClient()).listForSession(sessionId)
 }
 

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
+import { WERKSTATT_ACCOUNT } from '@/lib/routes'
 import { NotesRepository } from '@/lib/repositories/notes-repository'
 import { getAuthContext } from '@/lib/services/auth-context'
 
@@ -24,7 +25,7 @@ export async function addNote(_prev: NoteActionState, formData: FormData): Promi
   } catch {
     return { status: 'error', message: 'The note could not be saved. Please try again.' }
   }
-  revalidatePath('/account')
+  revalidatePath(WERKSTATT_ACCOUNT)
   return { status: 'ok' }
 }
 
@@ -40,6 +41,6 @@ export async function deleteNote(id: string): Promise<NoteActionState> {
   } catch {
     return { status: 'error', message: 'The note could not be deleted. Please try again.' }
   }
-  revalidatePath('/account')
+  revalidatePath(WERKSTATT_ACCOUNT)
   return { status: 'ok' }
 }

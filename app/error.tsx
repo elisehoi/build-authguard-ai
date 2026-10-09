@@ -2,6 +2,7 @@
 
 import { ButtonLink } from '@/components/button-link'
 import { Button } from '@/components/ui/button'
+import { WERKSTATT_ACCOUNT } from '@/lib/routes'
 
 // Only a generic message and the digest are shown: error.message can contain
 // server details that should not reach the browser.
@@ -16,7 +17,7 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
       {error.digest && <p className="font-mono text-xs text-muted-foreground">Reference: {error.digest}</p>}
       <div className="flex gap-2">
         <Button onClick={reset}>Try again</Button>
-        <ButtonLink href="/account" variant="outline">My notes</ButtonLink>
+        <ButtonLink href={WERKSTATT_ACCOUNT} variant="outline">My notes</ButtonLink>
       </div>
     </main>
   )
