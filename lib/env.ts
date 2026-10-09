@@ -15,6 +15,8 @@ const groups = {
   }),
   // Used by the Events API to authenticate incoming SDK requests.
   authguardApi: z.object({ AUTHGUARD_API_KEY: z.string().min(16) }),
+  // Identifies the connected client app in the console and the status API.
+  authguardApp: z.object({ AUTHGUARD_APP_ID: z.string().min(1).default('werkstatt-demo') }),
   // Used by the Werkstatt host app to configure the SDK.
   authguardClient: z.object({
     AUTHGUARD_API_KEY: z.string().min(16),

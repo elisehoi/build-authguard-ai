@@ -1,11 +1,18 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { getPublicEnv } from '@/lib/env.public'
+import { loginPathFor } from '@/lib/safe-redirect'
 
-export const PROTECTED_PREFIXES = ['/account', '/authguard'] as const
+export const PROTECTED_PREFIXES = ['/werkstatt/account', '/werkstatt/admin', '/authguard'] as const
+const PUBLIC_EXCEPTIONS = ['/authguard/login'] as const
+
+function matchesPrefix(pathname: string, prefix: string): boolean {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`)
+}
 
 function isProtected(pathname: string): boolean {
-  return PROTECTED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
+  if (PUBLIC_EXCEPTIONS.some((path) => matchesPrefix(pathname, path))) return false
+  return PROTECTED_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix))
 }
 
 export async function updateSession(request: NextRequest): Promise<NextResponse> {
@@ -34,7 +41,7 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
 
   if (!user && isProtected(request.nextUrl.pathname)) {
     const url = request.nextUrl.clone()
-    url.pathname = '/login'
+    url.pathname = loginPathFor(request.nextUrl.pathname)
     url.search = ''
     url.searchParams.set('next', request.nextUrl.pathname)
     return NextResponse.redirect(url)
