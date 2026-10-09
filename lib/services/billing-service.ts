@@ -8,6 +8,13 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 export type WebhookOutcome = 'processed' | 'duplicate' | 'ignored'
 
+// Used when STRIPE_PRICE_ID is not configured. Still fixed on the server.
+const FALLBACK_PRICE = {
+  currency: 'usd',
+  unit_amount: 900,
+  product_data: { name: 'AuthGuard Pro' },
+} as const
+
 export class BillingService {
   // The price comes from STRIPE_PRICE_ID on the server, never from the
   // browser, so a user cannot change what they pay. client_reference_id
@@ -17,7 +24,11 @@ export class BillingService {
     const session = await getStripe(STRIPE_SECRET_KEY).checkout.sessions.create(
       {
         mode: 'payment',
-        line_items: [{ price: STRIPE_PRICE_ID, quantity: 1 }],
+        line_items: [
+          STRIPE_PRICE_ID
+            ? { price: STRIPE_PRICE_ID, quantity: 1 }
+            : { price_data: FALLBACK_PRICE, quantity: 1 },
+        ],
         client_reference_id: userId,
         customer_email: email,
         success_url: `${origin}/billing/success?session_id={CHECKOUT_SESSION_ID}`,

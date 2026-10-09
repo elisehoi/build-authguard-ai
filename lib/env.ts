@@ -10,7 +10,7 @@ const groups = {
   supabaseAdmin: z.object({ SUPABASE_SERVICE_ROLE_KEY: z.string().min(1) }),
   stripeCheckout: z.object({
     STRIPE_SECRET_KEY: z.string().startsWith('sk_'),
-    STRIPE_PRICE_ID: z.string().startsWith('price_'),
+    STRIPE_PRICE_ID: z.string().startsWith('price_').optional(),
   }),
   stripeWebhook: z.object({
     STRIPE_SECRET_KEY: z.string().startsWith('sk_'),

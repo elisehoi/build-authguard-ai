@@ -1,47 +1,61 @@
-export default function Page() {
+import { ButtonLink } from '@/components/button-link'
+import { BrandMark } from '@/components/brand-mark'
+import { LandingTokenAnatomy } from '@/components/landing/token-anatomy'
+import { LandingLessons } from '@/components/landing/lessons'
+import { getAuthContext } from '@/lib/services/auth-context'
+
+export default async function HomePage() {
+  const context = await getAuthContext()
+
   return (
-    <main
-      style={{
-        colorScheme: 'light dark',
-        position: 'relative',
-        display: 'flex',
-        minHeight: '100vh',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'light-dark(#fff, #000)',
-        color: 'light-dark(#000, #fff)',
-      }}
-    >
-      <svg
-        aria-hidden="true"
-        style={{ width: 80, height: 80 }}
-        width={80}
-        height={80}
-        fill="none"
-        viewBox="0 0 20 20"
-        xmlns="http://www.w3.org/2000/svg"
-        stroke="currentColor"
-        strokeWidth="0.5"
-      >
-        <path
-          d="M14.2 14.2H17V6.9375C17 4.76288 15.2371 3 13.0625 3H5.8V5.8M14.2 14.2V7.79063L7.79062 14.2H14.2ZM14.2 14.2V17H6.9375C4.76288 17 3 15.2371 3 13.0625V5.8H5.8M5.8 5.8V12.2313L12.2313 5.8H5.8Z"
-          strokeLinejoin="round"
-        />
-      </svg>
-      <p
-        style={{
-          position: 'absolute',
-          left: '50%',
-          top: 'calc(50% + 56px)',
-          transform: 'translateX(-50%)',
-          whiteSpace: 'nowrap',
-          fontSize: '14px',
-          fontWeight: 500,
-          color: 'light-dark(#71717a, #a1a1aa)',
-        }}
-      >
-        Your v0 generation will show here.
-      </p>
-    </main>
+    <div className="flex min-h-dvh flex-col">
+      <header className="border-b bg-card">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 md:px-6">
+          <BrandMark />
+          <nav aria-label="Account" className="flex items-center gap-2">
+            {context ? (
+              <ButtonLink href="/dashboard">Open dashboard</ButtonLink>
+            ) : (
+              <>
+                <ButtonLink href="/login" variant="ghost">Log in</ButtonLink>
+                <ButtonLink href="/signup">Create account</ButtonLink>
+              </>
+            )}
+          </nav>
+        </div>
+      </header>
+
+      <main className="flex-1">
+        <section className="mx-auto grid max-w-6xl gap-12 px-4 py-16 md:grid-cols-2 md:items-center md:px-6 md:py-24">
+          <div className="flex flex-col gap-6">
+            <p className="font-mono text-sm text-primary">An auth lab you can poke at</p>
+            <h1 className="text-balance text-4xl font-semibold leading-tight tracking-tight md:text-5xl">
+              See exactly what happens after you click &ldquo;Log in&rdquo;.
+            </h1>
+            <p className="text-pretty text-lg leading-relaxed text-muted-foreground">
+              AuthGuard AI lets you sign in, open up your own session token, and replay it like an attacker would.
+              Deterministic code does every security check. The AI only explains what you&apos;re looking at, in plain
+              language.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <ButtonLink href={context ? '/session' : '/signup'} size="lg">{context ? 'Inspect my token' : 'Start the lab'}</ButtonLink>
+              {!context && (
+                <ButtonLink href="/login" size="lg" variant="outline">I already have an account</ButtonLink>
+              )}
+            </div>
+          </div>
+          <LandingTokenAnatomy />
+        </section>
+
+        <LandingLessons />
+      </main>
+
+      <footer className="border-t bg-card">
+        <div className="mx-auto max-w-6xl px-4 py-6 text-sm leading-relaxed text-muted-foreground md:px-6">
+          Educational project. Stripe runs in test mode. Never paste a real production token anywhere you don&apos;t
+          control.
+        </div>
+      </footer>
+    </div>
   )
 }

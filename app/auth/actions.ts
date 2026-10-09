@@ -108,6 +108,24 @@ export async function signup(_prev: AuthFormState, formData: FormData): Promise<
   return { status: 'check-email', email: parsed.data.email }
 }
 
+// OAuth: the browser is sent to Google, so this app never sees the Google
+// password. Supabase stores a PKCE code verifier in a cookie here, and
+// /auth/callback later proves it owns that verifier when exchanging the code.
+export async function signInWithGoogle(formData: FormData): Promise<void> {
+  const origin = getRequestOrigin(await headers())
+  const next = safeNextPath(formData.get('next')?.toString())
+  const callback = process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ?? `${origin}/auth/callback`
+  const redirectTo = next === '/dashboard' ? callback : `${callback}?next=${encodeURIComponent(next)}`
+
+  const supabase = await createClient()
+  const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } })
+  if (error || !data.url) {
+    console.error(`[auth] Google sign-in could not start: ${error?.code ?? 'no_url'}`)
+    redirect(`/login?error=${encodeURIComponent('Google sign-in is not available right now.')}`)
+  }
+  redirect(data.url)
+}
+
 export async function logout(): Promise<void> {
   const supabase = await createClient()
   // Revokes the session on the server too, so a copied refresh token dies

@@ -15,8 +15,15 @@ export class SessionEventService {
   // from the same IP, but nobody can recover the IP from the hash.
   private hashIp(ip: string | null): string | null {
     if (!ip) return null
-    const { IP_HASH_SALT } = getServerEnv('security')
-    return createHash('sha256').update(`${IP_HASH_SALT}:${ip}`).digest('hex')
+    let salt: string
+    try {
+      salt = getServerEnv('security').IP_HASH_SALT
+    } catch {
+      // Without a salt the hash could be reversed, so store nothing rather
+      // than a weak hash, and keep recording the rest of the event.
+      return null
+    }
+    return createHash('sha256').update(`${salt}:${ip}`).digest('hex')
   }
 
   // Audit logging must never break the page the user is on, so failures are
