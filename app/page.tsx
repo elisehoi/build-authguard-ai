@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { FileText, KeyRound, ShieldCheck, UserX } from 'lucide-react'
+import { ExplainText } from '@/components/authguard/explain-text'
 import { ButtonLink } from '@/components/button-link'
-import { AUTHGUARD_LOGIN, WERKSTATT_HOME } from '@/lib/routes'
+import { AUTHGUARD_LOGIN, AUTHGUARD_SIGNUP, WERKSTATT_HOME } from '@/lib/routes'
 
 export const metadata: Metadata = {
   title: { absolute: 'AuthGuard — account security, monitored' },
@@ -13,17 +14,17 @@ const FEATURES = [
   {
     icon: UserX,
     title: 'Detects session theft',
-    body: 'Spots reused sessions, tampered tokens and logins from devices a user has never used before.',
+    body: 'Spots session reuse from a second device, a tampered token presented to your app, and logins from a user agent never seen before.',
   },
   {
     icon: KeyRound,
     title: 'Catches weak and breached passwords',
-    body: 'Checks password strength and known breaches at signup and login, without storing the password.',
+    body: 'Checks password strength and flags any breached password at signup and login, without ever storing or sending the password itself.',
   },
   {
     icon: FileText,
     title: 'Explains every alert and writes security reports',
-    body: 'Each alert comes with a plain-language explanation and the evidence behind it, ready to share.',
+    body: 'From a failed-login burst to session theft: each alert comes with a plain-language explanation and the evidence behind it, ready to share.',
   },
 ] as const
 
@@ -49,7 +50,10 @@ export default function HomePage() {
           <p className="max-w-2xl text-pretty text-lg leading-relaxed text-muted-foreground">
             AuthGuard flags account-security issues in your app and explains them in plain language
           </p>
-          <ButtonLink href={AUTHGUARD_LOGIN} size="lg" className="h-11 px-5">Sign in to AuthGuard</ButtonLink>
+          <div className="flex flex-wrap gap-3">
+            <ButtonLink href={AUTHGUARD_LOGIN} size="lg" className="h-11 px-5">Sign in to AuthGuard</ButtonLink>
+            <ButtonLink href={AUTHGUARD_SIGNUP} size="lg" variant="outline" className="h-11 px-5">Create an account</ButtonLink>
+          </div>
         </section>
 
         <section aria-label="Features" className="border-y bg-muted">
@@ -60,7 +64,7 @@ export default function HomePage() {
                   <Icon className="size-5" aria-hidden="true" />
                 </span>
                 <h2 className="font-semibold tracking-tight">{title}</h2>
-                <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
+                <p className="text-sm leading-relaxed text-muted-foreground"><ExplainText text={body} /></p>
               </li>
             ))}
           </ul>

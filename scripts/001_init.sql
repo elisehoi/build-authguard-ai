@@ -26,48 +26,6 @@ drop policy if exists "notes_delete_own" on public.notes;
 create policy "notes_delete_own" on public.notes for delete using (auth.uid() = user_id);
 
 -- ---------------------------------------------------------------------------
--- profiles
--- ---------------------------------------------------------------------------
-create table if not exists public.profiles (
-  id uuid primary key references auth.users(id) on delete cascade,
-  is_pro boolean not null default false,
-  created_at timestamptz not null default now()
-);
-
-alter table public.profiles enable row level security;
-
--- Users may READ their own row only. There is intentionally no insert/update/
--- delete policy: if users could update their row they could set is_pro=true
--- themselves. Only the service role (Stripe webhook) bypasses RLS to write.
-drop policy if exists "profiles_select_own" on public.profiles;
-create policy "profiles_select_own" on public.profiles for select using (auth.uid() = id);
-
--- security definer: runs as the table owner so it can insert despite RLS.
--- search_path is pinned to '' so a caller cannot shadow "profiles" with a
--- malicious object and get it executed with elevated privileges.
-create or replace function public.handle_new_user()
-returns trigger
-language plpgsql
-security definer
-set search_path = ''
-as $$
-begin
-  insert into public.profiles (id) values (new.id) on conflict (id) do nothing;
-  return new;
-end;
-$$;
-
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row execute function public.handle_new_user();
-
--- Backfill profiles for users that signed up before this script ran.
-insert into public.profiles (id)
-select id from auth.users
-on conflict (id) do nothing;
-
--- ---------------------------------------------------------------------------
 -- session_events
 -- ---------------------------------------------------------------------------
 create table if not exists public.session_events (
@@ -92,19 +50,6 @@ alter table public.session_events enable row level security;
 -- the service role so a user cannot forge or erase their own audit trail.
 drop policy if exists "session_events_select_own" on public.session_events;
 create policy "session_events_select_own" on public.session_events for select using (auth.uid() = user_id);
-
--- ---------------------------------------------------------------------------
--- processed_stripe_events — makes the webhook idempotent.
--- Stripe retries deliveries; inserting the event id first lets us detect and
--- skip duplicates. RLS on with no policies = only the service role can touch it.
--- ---------------------------------------------------------------------------
-create table if not exists public.processed_stripe_events (
-  id text primary key,
-  type text not null,
-  processed_at timestamptz not null default now()
-);
-
-alter table public.processed_stripe_events enable row level security;
 
 -- ---------------------------------------------------------------------------
 -- Helper: map a login email to a user id so failed logins can be attributed
@@ -140,7 +85,7 @@ as $$
   join pg_catalog.pg_namespace n on n.oid = c.relnamespace
   where n.nspname = 'public'
     and c.relname = target_table
-    and target_table in ('notes', 'profiles', 'session_events');
+    and target_table in ('notes', 'session_events');
 $$;
 
 revoke all on function public.is_rls_enabled(text) from public, anon;

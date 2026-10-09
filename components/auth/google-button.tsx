@@ -2,8 +2,8 @@
 
 import { useFormStatus } from 'react-dom'
 import { Loader2 } from 'lucide-react'
-import { signInWithGoogle } from '@/app/auth/actions'
 import { Button } from '@/components/ui/button'
+import type { GoogleAction } from '@/lib/auth/form-state'
 
 function GoogleSubmit() {
   const { pending } = useFormStatus()
@@ -15,9 +15,9 @@ function GoogleSubmit() {
   )
 }
 
-export function GoogleButton({ next }: { next?: string }) {
+export function GoogleButton({ action, next }: { action: GoogleAction; next?: string }) {
   return (
-    <form action={signInWithGoogle}>
+    <form action={action}>
       {next && <input type="hidden" name="next" value={next} />}
       <GoogleSubmit />
     </form>

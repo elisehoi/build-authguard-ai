@@ -5,10 +5,11 @@ import { getAuthGuard, snapshotRequest } from '@/lib/authguard'
 import { getAuthContext, getVerifiedClaims } from '@/lib/services/auth-context'
 import { redirect } from 'next/navigation'
 import { WERKSTATT_ACCOUNT, WERKSTATT_LOGIN } from '@/lib/routes'
+import { WERKSTATT_AUTH_COOKIE } from '@/lib/supabase/werkstatt/config'
 
-// Supabase stores the session in cookies named sb-<ref>-auth-token (maybe chunked).
+// Werkstatt's session cookie (maybe chunked as <name>.0, <name>.1, ...).
 async function hasAuthCookie(): Promise<boolean> {
-  return (await cookies()).getAll().some((cookie) => cookie.name.startsWith('sb-') && cookie.name.includes('-auth-token'))
+  return (await cookies()).getAll().some((cookie) => cookie.name === WERKSTATT_AUTH_COOKIE || cookie.name.startsWith(`${WERKSTATT_AUTH_COOKIE}.`))
 }
 
 // Verify with the Supabase Auth server, then report to AuthGuard through the

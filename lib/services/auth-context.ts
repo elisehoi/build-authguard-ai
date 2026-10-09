@@ -2,10 +2,13 @@ import 'server-only'
 import type { SupabaseClient, User } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation'
 import { cache } from 'react'
-import { loginPathFor } from '@/lib/safe-redirect'
-import { createClient } from '@/lib/supabase/server'
+import { WERKSTATT_LOGIN } from '@/lib/routes'
+import { createWerkstattClient } from '@/lib/supabase/werkstatt/server'
 import { z } from 'zod'
 import type { SessionClaims } from '@/lib/authguard-sdk'
+
+// Werkstatt's signed-in customer, from Werkstatt's own Supabase project.
+// AuthGuard pages use console-access instead and never import this file.
 
 const claimsSchema = z.object({
   sub: z.string(),
@@ -37,7 +40,7 @@ export type AuthContext = { supabase: SupabaseClient; user: User }
 // cache() dedupes the call within one request, so the layout and the page
 // share a single round trip to Supabase Auth.
 export const getAuthContext = cache(async (): Promise<AuthContext | null> => {
-  const supabase = await createClient()
+  const supabase = await createWerkstattClient()
   const { data, error } = await supabase.auth.getUser()
   if (error || !data.user) return null
   return { supabase, user: data.user }
@@ -45,7 +48,7 @@ export const getAuthContext = cache(async (): Promise<AuthContext | null> => {
 
 export async function requireAuthContext(nextPath: string): Promise<AuthContext> {
   const context = await getAuthContext()
-  if (!context) redirect(`${loginPathFor(nextPath)}?next=${encodeURIComponent(nextPath)}`)
+  if (!context) redirect(`${WERKSTATT_LOGIN}?next=${encodeURIComponent(nextPath)}`)
   return context
 }
 

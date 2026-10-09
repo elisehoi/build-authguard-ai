@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { LocalTime } from '@/components/local-time'
 import type { AuthGuardEvent } from '@/lib/types'
+import { Explain } from './explain'
 
 function shortAgent(agent: string | null): string {
   if (!agent) return 'unknown'
@@ -24,8 +25,8 @@ export function EventsTable({ events }: { events: AuthGuardEvent[] }) {
             <th scope="col" className="px-3 py-2 font-medium">Event</th>
             <th scope="col" className="px-3 py-2 font-medium">Session</th>
             <th scope="col" className="px-3 py-2 font-medium">User ref</th>
-            <th scope="col" className="px-3 py-2 font-medium">Client</th>
-            <th scope="col" className="px-3 py-2 font-medium">IP hash</th>
+            <th scope="col" className="px-3 py-2 font-medium"><Explain term="user-agent">Client</Explain></th>
+            <th scope="col" className="px-3 py-2 font-medium"><Explain term="ip-hash">IP hash</Explain></th>
           </tr>
         </thead>
         <tbody className="divide-y font-mono text-xs">

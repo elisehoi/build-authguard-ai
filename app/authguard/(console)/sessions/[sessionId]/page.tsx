@@ -3,7 +3,9 @@ import { notFound } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { ClaimCard } from '@/components/authguard/claim-card'
 import { EventsTable } from '@/components/authguard/events-table'
+import { Explain } from '@/components/authguard/explain'
 import { LocalTime } from '@/components/local-time'
+import { ownsDemoApp } from '@/lib/services/console-access'
 import { loadSession } from '@/lib/services/console-data'
 
 const text = (value: unknown) => (typeof value === 'string' ? value : 'unknown')
@@ -12,6 +14,8 @@ const when = (value: unknown) => (typeof value === 'number' ? new Date(value * 1
 export default async function SessionPage({ params }: { params: Promise<{ sessionId: string }> }) {
   const { sessionId: raw } = await params
   const sessionId = decodeURIComponent(raw)
+  // The layout shows the empty state instead; pages may still render in parallel.
+  if (!(await ownsDemoApp())) return null
   const events = await loadSession(sessionId)
   if (events.length === 0) notFound()
 
@@ -34,9 +38,11 @@ export default async function SessionPage({ params }: { params: Promise<{ sessio
 
       {seen ? (
         <section aria-labelledby="claims" className="flex flex-col gap-3">
-          <h2 id="claims" className="text-lg font-semibold">Session claims</h2>
+          <h2 id="claims" className="text-lg font-semibold">Session <Explain term="jwt">claims</Explain></h2>
           <p className="max-w-prose text-sm leading-relaxed text-muted-foreground">
-            Read from the last session_seen event. Names and values only; no token is ever stored.
+            Read from the last session_seen event: the claims inside the user&apos;s <Explain term="access-token">access token</Explain>,
+            which travels in the <Explain term="session-cookie">session cookie</Explain>. Names and values only; no token is ever
+            stored. The same session id on another device is <Explain term="session-reuse">session reuse</Explain>.
           </p>
           <div className="grid gap-3 md:grid-cols-2">
             <ClaimCard sessionId={sessionId} field="sub" title="Subject">{seen.user_ref ? `${seen.user_ref.slice(0, 8)}…` : 'unknown'}</ClaimCard>
