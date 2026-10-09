@@ -21,8 +21,8 @@ export default async function ConsoleLoginPage({ searchParams }: { searchParams:
   if (await getAuthContext()) redirect(next)
 
   return (
-    <div className="console flex min-h-dvh items-center justify-center px-4 py-10">
-      <main className="flex w-full max-w-sm flex-col gap-6 rounded-xl border bg-card p-6 shadow-sm">
+    <div className="flex min-h-dvh items-center justify-center bg-muted px-4 py-10">
+      <main className="flex w-full max-w-sm flex-col gap-6 rounded-lg border bg-card p-8 shadow-sm">
         <div className="flex flex-col gap-1">
           <p className="flex items-center gap-2 font-semibold tracking-tight">
             <ShieldCheck className="size-5 text-primary" aria-hidden="true" />

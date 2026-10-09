@@ -88,31 +88,48 @@
   --sidebar-ring: oklch(0.42 0.08 155);
 }
 
-/* AuthGuard console: graphite surfaces, signal cyan, red/amber/blue severities. */
-.console {
-  color-scheme: dark;
-  --background: oklch(0.17 0.012 255);
-  --foreground: oklch(0.93 0.01 250);
-  --card: oklch(0.21 0.014 255);
-  --card-foreground: oklch(0.93 0.01 250);
-  --popover: oklch(0.21 0.014 255);
-  --popover-foreground: oklch(0.93 0.01 250);
-  --primary: oklch(0.8 0.12 200);
-  --primary-foreground: oklch(0.2 0.03 220);
-  --secondary: oklch(0.26 0.016 255);
-  --secondary-foreground: oklch(0.93 0.01 250);
-  --muted: oklch(0.25 0.015 255);
-  --muted-foreground: oklch(0.7 0.02 250);
-  --accent: oklch(0.28 0.04 215);
-  --accent-foreground: oklch(0.9 0.05 205);
-  --warning: oklch(0.8 0.14 80);
-  --warning-foreground: oklch(0.25 0.05 70);
-  --destructive: oklch(0.68 0.2 25);
-  --border: oklch(0.3 0.015 255);
-  --input: oklch(0.32 0.016 255);
-  --ring: oklch(0.8 0.12 200);
+/* AuthGuard ("/", /authguard/login, /authguard/*): white surfaces, slate
+   borders, navy text, signal blue. Scoped to .theme-authguard so the
+   Werkstatt :root theme above stays untouched. */
+.theme-authguard {
+  color-scheme: light;
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-foreground: #ffffff;
+  --secondary: #f8fafc;
+  --secondary-foreground: #0f172a;
+  --muted: #f8fafc;
+  --muted-foreground: #64748b;
+  --accent: #eff6ff;
+  --accent-foreground: #1d4ed8;
+  --warning: #d97706;
+  --warning-foreground: #ffffff;
+  --destructive: #dc2626;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #2563eb;
+  --chart-1: #2563eb;
+  --chart-2: #d97706;
+  --chart-3: #dc2626;
+  --chart-4: #64748b;
+  --chart-5: #0f172a;
   background-color: var(--background);
   color: var(--foreground);
+}
+
+.theme-authguard :is(a, button).bg-primary:hover {
+  background-color: var(--primary-hover);
+}
+
+.theme-authguard [data-slot='card'] {
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 1px 3px rgb(15 23 42 / 0.06);
 }
 
 @layer base {

@@ -14,7 +14,7 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
 
   if (access.status === 'forbidden') {
     return (
-      <div className="console flex min-h-dvh items-center justify-center px-4">
+      <div className="flex min-h-dvh items-center justify-center px-4">
         <main className="flex max-w-md flex-col items-start gap-4">
           <p className="font-mono text-xs text-destructive">403</p>
           <h1 className="text-2xl font-semibold tracking-tight">This account can&apos;t open the console.</h1>
@@ -28,7 +28,7 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
   }
 
   return (
-    <div className="console flex min-h-dvh flex-col">
+    <div className="flex min-h-dvh flex-col bg-muted">
       <ConsoleHeader email={access.email} />
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-4 py-8 md:px-6">{children}</main>
     </div>
