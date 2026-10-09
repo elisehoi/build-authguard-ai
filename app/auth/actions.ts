@@ -3,10 +3,9 @@
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
+import { reportAuthAttempt } from '@/lib/authguard'
 import { getRequestOrigin } from '@/lib/http'
 import { safeNextPath } from '@/lib/safe-redirect'
-import { sessionEventService } from '@/lib/services/session-event-service'
-import { tokenService } from '@/lib/services/token-service'
 import { createClient } from '@/lib/supabase/server'
 
 export type AuthField = 'email' | 'password' | 'confirmPassword'
@@ -60,7 +59,7 @@ export async function login(_prev: AuthFormState, formData: FormData): Promise<A
       return { status: 'error', message: 'Too many attempts. Wait a minute and try again.' }
     }
     if (error.code === 'invalid_credentials') {
-      await sessionEventService.recordFailedLogin(parsed.data.email)
+      await reportAuthAttempt({ email: parsed.data.email, success: false })
       // Same message for "no such user" and "wrong password", so the form
       // cannot be used to discover which emails have accounts.
       return { status: 'error', message: 'Invalid email or password.' }
@@ -69,8 +68,7 @@ export async function login(_prev: AuthFormState, formData: FormData): Promise<A
     return { status: 'error', message: 'Something went wrong while signing in. Please try again.' }
   }
 
-  const claims = tokenService.decode(data.session.access_token)
-  await sessionEventService.record({ userId: data.user.id, sessionId: claims.session_id ?? null, eventType: 'login_success' })
+  await reportAuthAttempt({ email: parsed.data.email, userId: data.user.id, success: true, password: parsed.data.password, context: 'login' })
   redirect(safeNextPath(formData.get('next')?.toString()))
 }
 
@@ -103,6 +101,10 @@ export async function signup(_prev: AuthFormState, formData: FormData): Promise<
     return { status: 'error', message: 'Something went wrong while creating your account. Please try again.' }
   }
 
+  if (data.user) {
+    await reportAuthAttempt({ email: parsed.data.email, userId: data.user.id, success: true, password: parsed.data.password, context: 'signup' })
+  }
+
   // With email confirmation turned off, Supabase signs the user in immediately.
   if (data.session) redirect('/dashboard')
   return { status: 'check-email', email: parsed.data.email }
@@ -129,7 +131,7 @@ export async function signInWithGoogle(formData: FormData): Promise<void> {
 export async function logout(): Promise<void> {
   const supabase = await createClient()
   // Revokes the session on the server too, so a copied refresh token dies
-  // with it. A copied access token still works until it expires (see /demo).
+  // with it. A copied access token still works until it expires.
   await supabase.auth.signOut()
   redirect('/login')
 }

@@ -8,9 +8,9 @@ const plexSans = IBM_Plex_Sans({ subsets: ['latin'], weight: ['400', '500', '600
 const plexMono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500', '600'], variable: '--font-plex-mono' })
 
 export const metadata: Metadata = {
-  title: { default: 'AuthGuard AI — learn how logins, sessions and tokens work', template: '%s · AuthGuard AI' },
+  title: { default: 'Werkstatt — woodworking classes and a workshop to build in', template: '%s · Werkstatt' },
   description:
-    'An educational lab: sign in, inspect your own JWT, replay a stolen token, and let AI explain what happened in plain language.',
+    'Small-group woodworking classes: dovetails, chairmaking, finishing and spoon carving. Book a bench and keep your own workshop notes.',
   generator: 'v0.app',
   icons: {
     icon: [
@@ -23,8 +23,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  colorScheme: 'light',
-  themeColor: '#f8f9fb',
+  themeColor: '#f8f5ee',
 }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

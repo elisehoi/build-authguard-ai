@@ -1,53 +1,69 @@
 import 'server-only'
 import { z } from 'zod'
 import type { LLMClient } from '@/lib/ai/llm-client'
-import { INCIDENT_SYSTEM_PROMPT, withFacts } from '@/lib/ai/prompts'
-import { createDefaultDetectionEngine } from '@/lib/detection/engine'
+import { ALERT_EXPLAIN_SYSTEM_PROMPT, SECURITY_REPORT_SYSTEM_PROMPT, withFacts } from '@/lib/ai/prompts'
 import type { Alert } from '@/lib/detection/types'
-import { SessionEventsRepository } from '@/lib/repositories/session-events-repository'
-import type { SupabaseClient } from '@supabase/supabase-js'
 
-export const incidentReportSchema = z.object({
-  likelyCause: z.string().describe('One or two sentences, or "unknown" if the evidence is insufficient.'),
-  evidence: z
-    .array(z.object({ eventId: z.number().int(), why: z.string() }))
-    .describe('Only event ids that appear in the alerts data.'),
-  confidence: z.enum(['low', 'medium', 'high']),
-  fixes: z.array(z.string()).max(6),
+export const LEARN_MORE_LINKS = [
+  'https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html',
+  'https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html',
+  'https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html',
+  'https://haveibeenpwned.com/Passwords',
+  'https://supabase.com/docs/guides/auth',
+] as const
+
+export const securityReportSchema = z.object({
+  summary: z.string().describe('Two sentences at most.'),
+  whatHappened: z
+    .array(z.object({ statement: z.string(), eventIds: z.array(z.string()).describe('Only event ids from the evidence.') }))
+    .max(6),
+  likelyCause: z.object({
+    statement: z.string().describe('Or "unknown" when the evidence does not show a cause.'),
+    confidence: z.enum(['low', 'medium', 'high']),
+  }),
+  impact: z.string().describe('Impact on the account, or "unknown".'),
+  fixes: z
+    .array(z.object({ action: z.string(), learnMoreUrl: z.enum(LEARN_MORE_LINKS) }))
+    .min(1)
+    .max(5),
 })
-export type IncidentReport = z.infer<typeof incidentReportSchema>
+export type SecurityReport = z.infer<typeof securityReportSchema>
 
-export class IncidentService {
-  constructor(private readonly db: SupabaseClient) {}
+// Only the alert, its evidence and the rule description go to the model.
+function alertFacts(alert: Alert) {
+  return {
+    rule: { id: alert.ruleId, description: alert.ruleDescription, severity: alert.severity },
+    alert: { title: alert.title, summary: alert.summary, subject: alert.subject, lastSeen: alert.occurredAt },
+    evidence: alert.evidence,
+  }
+}
 
-  // Detection is pure, deterministic code. The AI never decides what counts
-  // as an alert; it only writes up what the rules already found.
-  async detect(userId: string): Promise<Alert[]> {
-    const events = await new SessionEventsRepository(this.db).listRecent(userId)
-    return createDefaultDetectionEngine().run(events)
+export class AlertAiService {
+  constructor(private readonly llm: LLMClient) {}
+
+  explain(alert: Alert): Promise<string> {
+    return this.llm.generate({
+      system: ALERT_EXPLAIN_SYSTEM_PROMPT,
+      prompt: withFacts(alertFacts(alert), 'Explain this alert in plain language.'),
+      maxOutputTokens: 400,
+    })
   }
 
-  async generateReport(alerts: Alert[], llm: LLMClient): Promise<IncidentReport> {
-    if (alerts.length === 0) {
-      return { likelyCause: 'unknown', evidence: [], confidence: 'low', fixes: ['No alerts were found, so there is nothing to investigate.'] }
-    }
-
-    // User agents and hashes are left out: rule summaries are enough context.
-    const facts = alerts.map(({ ruleId, title, severity, summary, evidence }) => ({ ruleId, title, severity, summary, evidence }))
-    const report = await llm.generateStructured({
-      system: INCIDENT_SYSTEM_PROMPT,
-      prompt: withFacts({ alerts: facts }),
-      schema: incidentReportSchema,
+  async generateReport(alert: Alert): Promise<SecurityReport> {
+    const report = await this.llm.generateStructured({
+      system: SECURITY_REPORT_SYSTEM_PROMPT,
+      prompt: withFacts(alertFacts(alert), 'Write the security report for this alert.'),
+      schema: securityReportSchema,
     })
 
-    // Hallucination guard: drop any cited event id the rules did not produce.
-    const knownIds = new Set(alerts.flatMap((alert) => alert.evidence.map((item) => item.eventId)))
-    const evidence = report.evidence.filter((item) => knownIds.has(item.eventId))
-    const dropped = report.evidence.length - evidence.length
+    // Hallucination guard: drop any cited event id that is not in the evidence.
+    const knownIds = new Set(alert.evidence.map((item) => item.eventId))
+    const whatHappened = report.whatHappened.map((item) => ({ ...item, eventIds: item.eventIds.filter((id) => knownIds.has(id)) }))
+    const hadUnknownCitation = report.whatHappened.some((item, index) => item.eventIds.length !== whatHappened[index].eventIds.length)
     return {
       ...report,
-      evidence,
-      confidence: dropped > 0 ? 'low' : report.confidence,
+      whatHappened,
+      likelyCause: hadUnknownCitation ? { ...report.likelyCause, confidence: 'low' } : report.likelyCause,
     }
   }
 }

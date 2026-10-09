@@ -1,8 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
+import { reportAuthAttempt } from '@/lib/authguard'
 import { getRequestOrigin } from '@/lib/http'
 import { safeNextPath } from '@/lib/safe-redirect'
-import { sessionEventService } from '@/lib/services/session-event-service'
-import { tokenService } from '@/lib/services/token-service'
 import { createClient } from '@/lib/supabase/server'
 
 // Google (and email links in PKCE mode) send the browser back here with a
@@ -25,7 +24,6 @@ export async function GET(request: NextRequest) {
   const { data, error } = await supabase.auth.exchangeCodeForSession(code)
   if (error) return failure(error.message)
 
-  const claims = tokenService.decode(data.session.access_token)
-  await sessionEventService.record({ userId: data.user.id, sessionId: claims.session_id ?? null, eventType: 'login_success' })
+  if (data.user.email) await reportAuthAttempt({ email: data.user.email, userId: data.user.id, success: true })
   return NextResponse.redirect(`${origin}${next}`)
 }

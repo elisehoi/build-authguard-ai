@@ -1,37 +1,53 @@
-import type { SessionEvent } from '@/lib/types'
-import { toEvidence, type Alert, type DetectionRule } from '../types'
+import { buildAlert, groupBy, HOUR_MS, shortRef, type Alert, type DetectionRule } from '../types'
+import type { AuthGuardEvent } from '@/lib/types'
 
-// Many wrong passwords in a short window is the signature of password guessing.
+const THRESHOLD = 5
+const WINDOW_MS = 10 * 60 * 1000
+
+const time = (event: AuthGuardEvent) => Date.parse(event.occurred_at)
+
 export class FailedLoginBurstRule implements DetectionRule {
   readonly id = 'failed-login-burst'
+  readonly description = `${THRESHOLD} or more failed logins for the same email hash within 10 minutes, which can mean password guessing. Severity is high when a successful login follows.`
 
-  constructor(
-    private readonly threshold = 5,
-    private readonly windowMs = 10 * 60 * 1000,
-  ) {}
+  evaluate(events: readonly AuthGuardEvent[]): Alert[] {
+    const successes = events.filter((event) => event.event_type === 'login_success')
+    const failures = events.filter((event) => event.event_type === 'login_failed')
+    const alerts: Alert[] = []
 
-  evaluate(events: readonly SessionEvent[]): Alert | null {
-    const failures = events
-      .filter((event) => event.event_type === 'login_failed')
-      .sort((a, b) => a.created_at.localeCompare(b.created_at))
+    for (const [emailHash, group] of groupBy(failures, (event) => event.email_hash)) {
+      const ordered = [...group].sort((a, b) => time(a) - time(b))
+      let start = 0
+      while (start < ordered.length) {
+        let end = start
+        while (end + 1 < ordered.length && time(ordered[end + 1]) - time(ordered[start]) <= WINDOW_MS) end++
+        if (end - start + 1 < THRESHOLD) {
+          start++
+          continue
+        }
 
-    // Sliding window: find the largest group of failures within windowMs.
-    let best: SessionEvent[] = []
-    let start = 0
-    for (let end = 0; end < failures.length; end++) {
-      const endTime = Date.parse(failures[end].created_at)
-      while (endTime - Date.parse(failures[start].created_at) > this.windowMs) start++
-      if (end - start + 1 > best.length) best = failures.slice(start, end + 1)
+        const burst = ordered.slice(start, end + 1)
+        const burstEnd = time(burst[burst.length - 1])
+        const followUp = successes.find(
+          (event) => event.email_hash === emailHash && time(event) >= time(burst[0]) && time(event) <= burstEnd + WINDOW_MS,
+        )
+        alerts.push(
+          buildAlert({
+            rule: this,
+            title: 'Possible password guessing',
+            severity: followUp ? 'high' : 'medium',
+            summary: followUp
+              ? `${burst.length} failed logins for email hash ${shortRef(emailHash)} were followed by a successful login, so a guess may have worked.`
+              : `${burst.length} failed logins for email hash ${shortRef(emailHash)} within 10 minutes.`,
+            subject: `email hash ${shortRef(emailHash)}`,
+            subjectKey: emailHash,
+            bucketMs: HOUR_MS,
+            events: followUp ? [...burst, followUp] : burst,
+          }),
+        )
+        start = end + 1
+      }
     }
-    if (best.length < this.threshold) return null
-
-    return {
-      ruleId: this.id,
-      title: 'Burst of failed logins',
-      severity: 'medium',
-      summary: `${best.length} failed logins within ${this.windowMs / 60000} minutes.`,
-      sessionId: null,
-      evidence: best.map(toEvidence),
-    }
+    return alerts
   }
 }

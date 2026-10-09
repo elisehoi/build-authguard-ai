@@ -7,7 +7,7 @@ import { getAuthContext } from '@/lib/services/auth-context'
 export const metadata: Metadata = { title: 'Create account' }
 
 export default async function SignupPage() {
-  if (await getAuthContext()) redirect('/dashboard')
+  if (await getAuthContext()) redirect('/account')
 
   return (
     <AuthShell

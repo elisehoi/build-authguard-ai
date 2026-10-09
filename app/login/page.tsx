@@ -14,7 +14,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   // React (escaped), so a crafted ?error= cannot inject HTML. Length is capped.
   const urlError = typeof params.error === 'string' ? params.error.slice(0, 200) : undefined
 
-  if (await getAuthContext()) redirect(next ?? '/dashboard')
+  if (await getAuthContext()) redirect(next ?? '/account')
 
   return (
     <AuthShell

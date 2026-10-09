@@ -8,23 +8,32 @@ import { getPublicEnv } from './env.public'
 
 const groups = {
   supabaseAdmin: z.object({ SUPABASE_SERVICE_ROLE_KEY: z.string().min(1) }),
-  stripeCheckout: z.object({
-    STRIPE_SECRET_KEY: z.string().startsWith('sk_'),
-    STRIPE_PRICE_ID: z.string().startsWith('price_').optional(),
-  }),
-  stripeWebhook: z.object({
-    STRIPE_SECRET_KEY: z.string().startsWith('sk_'),
-    STRIPE_WEBHOOK_SECRET: z.string().startsWith('whsec_'),
-  }),
   llm: z.object({
     // Optional: on Vercel the AI Gateway authenticates automatically via OIDC.
     LLM_API_KEY: z.string().min(1).optional(),
     LLM_MODEL: z.string().min(1).default('openai/gpt-5-mini'),
   }),
-  security: z.object({
-    // A long random salt makes hashed IPs impossible to reverse with a lookup
-    // table of all ~4 billion IPv4 addresses.
+  // Used by the Events API to authenticate incoming SDK requests.
+  authguardApi: z.object({ AUTHGUARD_API_KEY: z.string().min(16) }),
+  // Used by the Werkstatt host app to configure the SDK.
+  authguardClient: z.object({
+    AUTHGUARD_API_KEY: z.string().min(16),
+    AUTHGUARD_APP_ID: z.string().min(1).default('werkstatt-demo'),
+    AUTHGUARD_ENDPOINT: z.url().optional(),
+    // A long random salt makes hashed IPs and emails impossible to reverse
+    // with a lookup table.
     IP_HASH_SALT: z.string().min(16),
+  }),
+  authguardConsole: z.object({
+    AUTHGUARD_ADMIN_EMAILS: z
+      .string()
+      .min(3)
+      .transform((value) =>
+        value
+          .split(',')
+          .map((email) => email.trim().toLowerCase())
+          .filter(Boolean),
+      ),
   }),
 } as const
 

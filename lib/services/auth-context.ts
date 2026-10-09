@@ -3,7 +3,30 @@ import type { SupabaseClient, User } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation'
 import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
-import { tokenService, type TokenClaims } from './token-service'
+import { z } from 'zod'
+import type { SessionClaims } from '@/lib/authguard-sdk'
+
+const claimsSchema = z.object({
+  sub: z.string(),
+  session_id: z.string().optional(),
+  iat: z.number().optional(),
+  exp: z.number().optional(),
+  aal: z.string().optional(),
+  role: z.string().optional(),
+})
+
+// Decoding is not verification: it only reads the payload, and is called
+// after getUser() has already verified the session with Supabase Auth.
+function decodeClaims(token: string): z.infer<typeof claimsSchema> | null {
+  const segment = token.split('.')[1]
+  if (!segment) return null
+  try {
+    const parsed = claimsSchema.safeParse(JSON.parse(Buffer.from(segment, 'base64url').toString('utf8')))
+    return parsed.success ? parsed.data : null
+  } catch {
+    return null
+  }
+}
 
 export type AuthContext = { supabase: SupabaseClient; user: User }
 
@@ -28,10 +51,10 @@ export async function requireAuthContext(nextPath: string): Promise<AuthContext>
 // Reads the access token only AFTER getUser() has verified the user, and only
 // to decode claims for display. The sub check guards against a mismatched or
 // stale cookie. The raw token never leaves this function.
-export async function getVerifiedClaims(context: AuthContext): Promise<TokenClaims | null> {
+export async function getVerifiedClaims(context: AuthContext): Promise<SessionClaims | null> {
   const { data } = await context.supabase.auth.getSession()
   const token = data.session?.access_token
   if (!token) return null
-  const claims = tokenService.decode(token)
-  return claims.sub === context.user.id ? claims : null
+  const claims = decodeClaims(token)
+  return claims && claims.sub === context.user.id ? claims : null
 }

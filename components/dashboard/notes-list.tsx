@@ -10,7 +10,7 @@ export function NotesList({ notes }: { notes: Note[] }) {
         <StickyNote className="size-6 text-muted-foreground" aria-hidden="true" />
         <p className="font-medium">No notes yet</p>
         <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-          Add one, then sign in from another account: it won&apos;t appear there, because RLS filters it out.
+          Add your first one above. Only you can see what you write here.
         </p>
       </div>
     )

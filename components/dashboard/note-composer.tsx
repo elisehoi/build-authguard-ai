@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useRef } from 'react'
 import { Loader2, Plus } from 'lucide-react'
-import { addNote, type NoteActionState } from '@/app/(app)/dashboard/actions'
+import { addNote, type NoteActionState } from '@/app/account/actions'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -25,7 +25,7 @@ export function NoteComposer() {
         name="content"
         maxLength={500}
         rows={3}
-        placeholder="Something only you should be able to read…"
+        placeholder="Dovetail layout, finish recipe, next class…"
         aria-invalid={state.status === 'error'}
         aria-describedby={state.status === 'error' ? 'content-error' : undefined}
         required

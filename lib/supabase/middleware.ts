@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { getPublicEnv } from '@/lib/env.public'
 
-export const PROTECTED_PREFIXES = ['/dashboard', '/session', '/assistant', '/demo', '/incidents', '/billing'] as const
+export const PROTECTED_PREFIXES = ['/account', '/authguard'] as const
 
 function isProtected(pathname: string): boolean {
   return PROTECTED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))

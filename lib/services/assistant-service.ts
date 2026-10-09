@@ -2,7 +2,9 @@ import 'server-only'
 import { z } from 'zod'
 import type { ChatMessage, LLMClient, StreamHandle } from '@/lib/ai/llm-client'
 import { ASSISTANT_SYSTEM_PROMPT, withFacts } from '@/lib/ai/prompts'
-import type { AuthFacts } from './auth-facts'
+import type { buildAssistantFacts } from './console-data'
+
+type AuthFacts = ReturnType<typeof buildAssistantFacts>
 
 export const MAX_MESSAGE_CHARS = 500
 export const MAX_HISTORY = 10
