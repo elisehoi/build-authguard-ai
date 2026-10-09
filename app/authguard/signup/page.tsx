@@ -12,7 +12,7 @@ export default async function ConsoleSignupPage() {
   if ((await getConsoleAccess()).status === 'ok') redirect(AUTHGUARD_HOME)
 
   return (
-    <AuthCard title="Create your AuthGuard account" description="Free to start. Connect an app afterwards to begin monitoring.">
+    <AuthCard title="Create your AuthGuard account" description="Create an account to connect your first app.">
       <SignupForm action={signup} googleAction={signInWithGoogle} loginHref={AUTHGUARD_LOGIN} />
     </AuthCard>
   )

@@ -10,7 +10,7 @@ const plexMono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500', '600
 export const metadata: Metadata = {
   title: { default: 'Werkstatt — woodworking classes and a workshop to build in', template: '%s · Werkstatt' },
   description:
-    'Small-group woodworking classes: dovetails, chairmaking, finishing and spoon carving. Book a bench and keep your own workshop notes.',
+    'Small-group woodworking classes: dovetails, chairmaking, finishing and spoon carving. Keep your own workshop notes.',
   generator: 'v0.app',
   icons: {
     icon: [

@@ -1,0 +1,23 @@
+'use client'
+
+import { BrandMark } from '@/components/brand-mark'
+import { ButtonLink } from '@/components/button-link'
+import { Button } from '@/components/ui/button'
+import { WERKSTATT_HOME } from '@/lib/routes'
+
+// Only a generic message and the digest are shown: error.message can contain
+// server details that should not reach the browser.
+export default function WerkstattError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  return (
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col items-start justify-center gap-4 px-4">
+      <BrandMark />
+      <h1 className="text-2xl font-semibold tracking-tight">This page couldn&apos;t load.</h1>
+      <p className="leading-relaxed text-muted-foreground">Something went wrong on our side. Please try again in a moment.</p>
+      {error.digest && <p className="font-mono text-xs text-muted-foreground">Reference: {error.digest}</p>}
+      <div className="flex gap-2">
+        <Button onClick={reset}>Try again</Button>
+        <ButtonLink href={WERKSTATT_HOME} variant="outline">Back to Werkstatt</ButtonLink>
+      </div>
+    </main>
+  )
+}

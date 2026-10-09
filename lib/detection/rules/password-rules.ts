@@ -1,8 +1,9 @@
-import { buildAlert, DAY_MS, groupBy, shortRef, type Alert, type DetectionRule } from '../types'
+import { buildAlert, groupBy, shortRef, type Alert, type DetectionRule } from '../types'
 import type { AuthGuardEvent } from '@/lib/types'
 
 // Password checks have no session, so they are grouped by account (user ref,
-// or email hash when the account is not known) and by day.
+// or email hash when the account is not known), with no time bucket: a weak
+// or breached password alerts once per account, not again on every login.
 function evaluatePasswordChecks(
   rule: DetectionRule,
   events: readonly AuthGuardEvent[],
@@ -13,7 +14,7 @@ function evaluatePasswordChecks(
   const alerts: Alert[] = []
   for (const [key, group] of groupBy(flagged, (event) => event.user_ref ?? event.email_hash)) {
     const subject = group[0].user_ref ? `user ref ${shortRef(key)}` : `email hash ${shortRef(key)}`
-    alerts.push(buildAlert({ rule, ...describe(subject, group.length), subject, subjectKey: key, bucketMs: DAY_MS, events: group }))
+    alerts.push(buildAlert({ rule, ...describe(subject, group.length), subject, subjectKey: key, events: group }))
   }
   return alerts
 }

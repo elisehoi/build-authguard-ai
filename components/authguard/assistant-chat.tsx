@@ -13,7 +13,7 @@ const MAX_CHARS = 500
 
 const SUGGESTIONS = [
   'What are the most serious alerts right now?',
-  'Which sessions had a failed login burst?',
+  'Which accounts had a failed-login burst?',
   'Were any breached passwords used at signup?',
   'Summarize the last 24 hours.',
 ] as const

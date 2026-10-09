@@ -3,17 +3,16 @@ import Link from 'next/link'
 import { FileText, KeyRound, ShieldCheck, UserX } from 'lucide-react'
 import { ExplainText } from '@/components/authguard/explain-text'
 import { ButtonLink } from '@/components/button-link'
+import { authGuardMetadata, authGuardViewport } from '@/lib/authguard/metadata'
 import { AUTHGUARD_LOGIN, AUTHGUARD_SIGNUP, WERKSTATT_HOME } from '@/lib/routes'
 
-export const metadata: Metadata = {
-  title: { absolute: 'AuthGuard — account security, monitored' },
-  description: 'AuthGuard flags account-security issues in your app and explains them in plain language.',
-}
+export const metadata: Metadata = { ...authGuardMetadata, title: { absolute: 'AuthGuard — account security, monitored' } }
+export const viewport = authGuardViewport
 
 const FEATURES = [
   {
     icon: UserX,
-    title: 'Detects session theft',
+    title: 'Flags signs of session theft',
     body: 'Spots session reuse from a second device, a tampered token presented to your app, and logins from a user agent never seen before.',
   },
   {

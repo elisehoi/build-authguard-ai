@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { AUTHGUARD_HOME } from '@/lib/routes'
 import { ownsDemoApp } from '@/lib/services/console-access'
-import { markNotificationRead } from '@/lib/services/console-data'
+import { markAllNotificationsRead, markNotificationRead } from '@/lib/services/console-data'
 
 const alertIdSchema = z.string().regex(/^[0-9a-f]{16}$/)
 
@@ -14,5 +14,11 @@ export async function markAlertRead(alertId: string): Promise<void> {
   const parsed = alertIdSchema.safeParse(alertId)
   if (!parsed.success || !(await ownsDemoApp())) return
   await markNotificationRead(parsed.data)
+  revalidatePath(AUTHGUARD_HOME, 'layout')
+}
+
+export async function markAllAlertsRead(): Promise<void> {
+  if (!(await ownsDemoApp())) return
+  await markAllNotificationsRead()
   revalidatePath(AUTHGUARD_HOME, 'layout')
 }

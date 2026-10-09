@@ -16,8 +16,6 @@ const groups = {
   }),
   // Used by the Events API to authenticate incoming SDK requests.
   authguardApi: z.object({ AUTHGUARD_API_KEY: z.string().min(16) }),
-  // Identifies the connected client app in the console and the status API.
-  authguardApp: z.object({ AUTHGUARD_APP_ID: z.string().min(1).default('werkstatt-demo') }),
   // Used by the Werkstatt host app to configure the SDK.
   authguardClient: z.object({
     AUTHGUARD_API_KEY: z.string().min(16),
@@ -32,8 +30,12 @@ const groups = {
   notifications: z.object({
     RESEND_API_KEY: z.string().min(1).optional(),
     AUTHGUARD_ALERT_EMAIL: z.email().optional(),
+    // Base URL for links in emails, e.g. https://authguard.example.com.
+    AUTHGUARD_PUBLIC_URL: z.url().optional(),
   }),
   authguardConsole: z.object({
+    // The connected app that AUTHGUARD_ADMIN_EMAILS own (the Werkstatt demo).
+    AUTHGUARD_APP_ID: z.string().min(1).default('werkstatt-demo'),
     AUTHGUARD_ADMIN_EMAILS: z
       .string()
       .min(3)
@@ -61,21 +63,29 @@ export function getServerEnv<G extends GroupName>(group: G): GroupEnv<G> {
   return result.data as GroupEnv<G>
 }
 
-export function validateAllEnv(): string[] {
-  const problems: string[] = []
-  for (const check of [getAuthGuardPublicEnv, getWerkstattPublicEnv]) {
+// Without these AuthGuard itself cannot run: its Supabase project, the
+// service role for the authguard_* tables, and the Events API key.
+const CORE_GROUPS = ['supabaseAdmin', 'authguardApi'] as const satisfies readonly GroupName[]
+
+export function validateAllEnv(): { errors: string[]; warnings: string[] } {
+  const errors: string[] = []
+  const warnings: string[] = []
+  const collect = (target: string[], label: string, check: () => unknown) => {
     try {
       check()
     } catch (error) {
-      problems.push((error as Error).message)
+      target.push(`[${label}] ${(error as Error).message}`)
     }
   }
+
+  collect(errors, 'authguardSupabase', getAuthGuardPublicEnv)
+  for (const name of CORE_GROUPS) collect(errors, name, () => getServerEnv(name))
+
+  // Optional features: Werkstatt, its SDK, alert emails, admin list, AI.
+  // Each one re-validates when used and fails only that feature.
+  collect(warnings, 'werkstattSupabase', getWerkstattPublicEnv)
   for (const name of Object.keys(groups) as GroupName[]) {
-    try {
-      getServerEnv(name)
-    } catch (error) {
-      problems.push(`[${name}] ${(error as Error).message}`)
-    }
+    if (!(CORE_GROUPS as readonly GroupName[]).includes(name)) collect(warnings, name, () => getServerEnv(name))
   }
-  return problems
+  return { errors, warnings }
 }

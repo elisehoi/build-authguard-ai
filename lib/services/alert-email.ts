@@ -10,7 +10,7 @@ const escapeHtml = (value: string) =>
 // Plain language without an AI call: the rule's summary plus the static
 // glossary entry for that rule. Alerts only ever carry hash prefixes and
 // shortened refs, never raw IPs, emails or tokens.
-export function buildAlertEmail(alert: Alert, alertUrl: string) {
+export function buildAlertEmail(alert: Alert, alertUrl: string, escalated = false) {
   const term = RULE_TERMS[alert.ruleId]
   const explanation = term ? GLOSSARY[term].body.replaceAll('*', '') : alert.ruleDescription
   const when = new Date(alert.occurredAt).toUTCString()
@@ -23,7 +23,8 @@ export function buildAlertEmail(alert: Alert, alertUrl: string) {
     .join(' · ')
 
   const subject = `[AuthGuard] ${alert.severity}: ${alert.title}`
-  const text = [alert.summary, '', explanation, '', `Time: ${when}`, `Affected: ${affected}`, '', `Open the alert: ${alertUrl}`].join('\n')
+  const note = escalated ? 'This alert was escalated from medium to high.' : ''
+  const text = [...(note ? [note, ''] : []), alert.summary, '', explanation, '', `Time: ${when}`, `Affected: ${affected}`, '', `Open the alert: ${alertUrl}`].join('\n')
   const color = alert.severity === 'high' ? '#DC2626' : '#D97706'
   const html = `<!doctype html>
 <html><body style="margin:0;background:#F8FAFC;font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#0F172A">
@@ -32,6 +33,7 @@ export function buildAlertEmail(alert: Alert, alertUrl: string) {
       <tr><td style="font-weight:600;font-size:15px">&#128737; AuthGuard</td></tr>
       <tr><td style="padding-top:20px"><span style="display:inline-block;border:1px solid ${color};color:${color};border-radius:4px;padding:2px 8px;font-size:12px;font-weight:600;text-transform:uppercase">${escapeHtml(alert.severity)}</span></td></tr>
       <tr><td style="padding-top:12px;font-size:20px;font-weight:600">${escapeHtml(alert.title)}</td></tr>
+      ${note ? `<tr><td style="padding-top:12px;font-size:14px;font-weight:600;color:${color}">${escapeHtml(note)}</td></tr>` : ''}
       <tr><td style="padding-top:12px;font-size:15px;line-height:1.6">${escapeHtml(alert.summary)}</td></tr>
       <tr><td style="padding-top:12px;font-size:14px;line-height:1.6;color:#64748B">${escapeHtml(explanation)}</td></tr>
       <tr><td style="padding-top:16px;font-size:13px;color:#64748B;line-height:1.7">
@@ -46,8 +48,8 @@ export function buildAlertEmail(alert: Alert, alertUrl: string) {
 }
 
 /** Sends through the Resend REST API. Returns false (never throws) when sending failed. */
-export async function sendAlertEmail(input: { apiKey: string; to: string; alert: Alert; alertUrl: string }): Promise<boolean> {
-  const { subject, text, html } = buildAlertEmail(input.alert, input.alertUrl)
+export async function sendAlertEmail(input: { apiKey: string; to: string; alert: Alert; alertUrl: string; escalated?: boolean }): Promise<boolean> {
+  const { subject, text, html } = buildAlertEmail(input.alert, input.alertUrl, input.escalated)
   try {
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',

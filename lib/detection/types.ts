@@ -58,7 +58,8 @@ type AlertInput = {
   subject: string
   /** Stable key for who is affected, so the same situation always yields the same id. */
   subjectKey: string
-  bucketMs: number
+  /** Time bucket for the id. Omit for one alert per subject, whenever it happens. */
+  bucketMs?: number
   events: readonly AuthGuardEvent[]
 }
 
@@ -68,7 +69,7 @@ export function buildAlert(input: AlertInput): Alert {
   const sorted = [...input.events].sort((a, b) => Date.parse(a.occurred_at) - Date.parse(b.occurred_at))
   const first = sorted[0]
   const last = sorted[sorted.length - 1]
-  const bucket = Math.floor(Date.parse(first.occurred_at) / input.bucketMs)
+  const bucket = input.bucketMs ? Math.floor(Date.parse(first.occurred_at) / input.bucketMs) : 'once'
   const id = createHash('sha256').update(`${input.rule.id}|${input.subjectKey}|${bucket}`).digest('hex').slice(0, 16)
   return {
     id,

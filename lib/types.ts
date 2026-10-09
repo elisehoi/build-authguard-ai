@@ -7,7 +7,7 @@ export const noteSchema = z.object({
 })
 export type Note = z.infer<typeof noteSchema>
 
-export const EVENT_TYPES = ['login_success', 'login_failed', 'signup', 'password_check', 'session_seen', 'token_invalid', 'test'] as const
+export const EVENT_TYPES = ['login_success', 'login_failed', 'signup', 'password_check', 'session_seen', 'token_invalid'] as const
 export type EventType = (typeof EVENT_TYPES)[number]
 
 export const authGuardEventSchema = z.object({

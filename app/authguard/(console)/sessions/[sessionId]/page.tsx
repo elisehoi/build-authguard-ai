@@ -12,8 +12,8 @@ const text = (value: unknown) => (typeof value === 'string' ? value : 'unknown')
 const when = (value: unknown) => (typeof value === 'number' ? new Date(value * 1000).toISOString() : null)
 
 export default async function SessionPage({ params }: { params: Promise<{ sessionId: string }> }) {
-  const { sessionId: raw } = await params
-  const sessionId = decodeURIComponent(raw)
+  // Next.js has already decoded the segment; decoding again would break on '%'.
+  const { sessionId } = await params
   // The layout shows the empty state instead; pages may still render in parallel.
   if (!(await ownsDemoApp())) return null
   const events = await loadSession(sessionId)

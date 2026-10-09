@@ -9,7 +9,7 @@ import { SeverityBadge } from '@/components/authguard/severity-badge'
 import { LocalTime } from '@/components/local-time'
 import { RULE_TERMS } from '@/lib/authguard/glossary'
 import { ownsDemoApp } from '@/lib/services/console-access'
-import { loadSnapshot } from '@/lib/services/console-data'
+import { loadSnapshot, markNotificationRead } from '@/lib/services/console-data'
 
 export default async function AlertPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -17,7 +17,11 @@ export default async function AlertPage({ params }: { params: Promise<{ id: stri
   if (!(await ownsDemoApp())) return null
   const { alerts } = await loadSnapshot()
   const alert = alerts.find((item) => item.id === id)
-  if (!alert) notFound()
+  if (!alert) {
+    // An alert older than 7 days is gone, but its notification must not stay unread forever.
+    await markNotificationRead(id).catch(() => undefined)
+    notFound()
+  }
 
   return (
     <>

@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Bell } from 'lucide-react'
+import { Bell, Loader2 } from 'lucide-react'
+import { markAllAlertsRead } from '@/app/authguard/(console)/actions'
 import { LocalTime } from '@/components/local-time'
 import type { UnreadNotification } from '@/lib/services/console-data'
 import { cn } from '@/lib/utils'
@@ -12,6 +13,7 @@ export function NotificationBell({ count, items }: { count: number; items: Unrea
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
+  const [marking, startMarking] = useTransition()
 
   // Close on navigation, Escape, or a click outside.
   useEffect(() => setOpen(false), [pathname])
@@ -49,7 +51,20 @@ export function NotificationBell({ count, items }: { count: number; items: Unrea
 
       {open && (
         <div className="absolute right-0 z-40 mt-2 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-lg border bg-card shadow-lg">
-          <p className="border-b px-4 py-2.5 text-sm font-medium">Notifications</p>
+          <div className="flex items-center justify-between gap-3 border-b px-4 py-2.5">
+            <p className="text-sm font-medium">Notifications</p>
+            {count > 0 && (
+              <button
+                type="button"
+                disabled={marking}
+                onClick={() => startMarking(() => markAllAlertsRead())}
+                className="flex items-center gap-1 text-xs font-medium text-primary hover:underline disabled:opacity-60"
+              >
+                {marking && <Loader2 className="size-3 animate-spin" aria-hidden="true" />}
+                Mark all as read
+              </button>
+            )}
+          </div>
           {items.length === 0 ? (
             <p className="px-4 py-6 text-center text-sm text-muted-foreground">No unread alerts.</p>
           ) : (

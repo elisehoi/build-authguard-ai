@@ -1,26 +1,36 @@
 import { buildAlert, DAY_MS, groupBy, shortRef, type Alert, type DetectionRule } from '../types'
+import { clientFamily } from '../user-agent'
 import type { AuthGuardEvent } from '@/lib/types'
 
 export class SessionReuseRule implements DetectionRule {
   readonly id = 'session-reuse'
   readonly description =
-    'The same session_id was seen with a different user agent or hashed IP, which can mean the session token was copied to another device.'
+    'The same session_id was seen from a different browser or operating system (high), or only from a different hashed IP (low). Browser version updates are ignored.'
 
   evaluate(events: readonly AuthGuardEvent[]): Alert[] {
     const seen = events.filter((event) => event.event_type === 'session_seen')
     const alerts: Alert[] = []
     for (const [sessionId, group] of groupBy(seen, (event) => event.session_id)) {
-      const agents = new Set(group.map((event) => event.user_agent).filter(Boolean))
+      const clients = new Set(group.map((event) => clientFamily(event.user_agent)).filter(Boolean))
       const addresses = new Set(group.map((event) => event.ip_hash).filter(Boolean))
-      if (agents.size < 2 && addresses.size < 2) continue
+      const otherDevice = clients.size > 1
+      // A network change alone is common (Wi-Fi to mobile, VPN), so it is only low.
+      if (!otherDevice && addresses.size < 2) continue
 
-      const changed = [agents.size > 1 && 'user agent', addresses.size > 1 && 'network address'].filter(Boolean).join(' and ')
       alerts.push(
         buildAlert({
           rule: this,
-          title: 'Session token used from another device, possible theft',
-          severity: 'high',
-          summary: `Session ${shortRef(sessionId)} was seen with ${Math.max(agents.size, addresses.size)} different clients (the ${changed} changed).`,
+          ...(otherDevice
+            ? {
+                title: 'Session token used from another device, possible theft',
+                severity: 'high' as const,
+                summary: `Session ${shortRef(sessionId)} was seen from ${clients.size} different browsers or operating systems.`,
+              }
+            : {
+                title: 'Session used from a new network',
+                severity: 'low' as const,
+                summary: `Session ${shortRef(sessionId)} was seen from ${addresses.size} different networks with the same browser.`,
+              }),
           subject: `session ${shortRef(sessionId)}`,
           subjectKey: sessionId,
           bucketMs: DAY_MS,

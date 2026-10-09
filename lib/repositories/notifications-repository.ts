@@ -26,6 +26,22 @@ export class NotificationsRepository {
     return (data?.length ?? 0) > 0
   }
 
+  /**
+   * Raises a medium notification to high and marks it unread again. The
+   * conditional update makes this true for exactly one caller per alert, so
+   * the escalation email is sent once.
+   */
+  async escalateToHigh(alertId: string): Promise<boolean> {
+    const { data, error } = await this.db
+      .from('authguard_notifications')
+      .update({ severity: 'high', read_at: null })
+      .eq('alert_id', alertId)
+      .eq('severity', 'medium')
+      .select('alert_id')
+    if (error) throw new Error(`Could not escalate notification: ${error.message}`)
+    return (data?.length ?? 0) > 0
+  }
+
   async markEmailed(alertId: string): Promise<void> {
     const { error } = await this.db.from('authguard_notifications').update({ emailed_at: new Date().toISOString() }).eq('alert_id', alertId)
     if (error) throw new Error(`Could not mark notification emailed: ${error.message}`)
@@ -55,5 +71,10 @@ export class NotificationsRepository {
       .eq('alert_id', alertId)
       .is('read_at', null)
     if (error) throw new Error(`Could not mark notification read: ${error.message}`)
+  }
+
+  async markAllRead(): Promise<void> {
+    const { error } = await this.db.from('authguard_notifications').update({ read_at: new Date().toISOString() }).is('read_at', null)
+    if (error) throw new Error(`Could not mark notifications read: ${error.message}`)
   }
 }

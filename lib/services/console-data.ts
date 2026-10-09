@@ -6,7 +6,7 @@ import { AuthGuardEventsRepository } from '@/lib/repositories/authguard-events-r
 import { NotificationsRepository } from '@/lib/repositories/notifications-repository'
 import { createAuthGuardAdminClient } from '@/lib/supabase/authguard/admin'
 import type { AuthGuardEvent } from '@/lib/types'
-import { getConsoleAccess } from './console-access'
+import { demoAppId, getConsoleAccess } from './console-access'
 
 export type ConsoleSnapshot = { events: AuthGuardEvent[]; alerts: Alert[] }
 
@@ -26,7 +26,7 @@ export const loadSnapshot = cache(async (): Promise<ConsoleSnapshot> => {
 
 export async function loadSession(sessionId: string): Promise<AuthGuardEvent[]> {
   await assertConsoleAdmin()
-  return new AuthGuardEventsRepository(createAuthGuardAdminClient()).listForSession(sessionId)
+  return new AuthGuardEventsRepository(createAuthGuardAdminClient()).listForSession(sessionId, demoAppId())
 }
 
 export type UnreadNotification = { alertId: string; severity: 'medium' | 'high'; title: string; createdAt: string }
@@ -48,6 +48,11 @@ export const loadUnreadNotifications = cache(async (): Promise<{ count: number; 
     })),
   }
 })
+
+export async function markAllNotificationsRead(): Promise<void> {
+  await assertConsoleAdmin()
+  await new NotificationsRepository(createAuthGuardAdminClient()).markAllRead()
+}
 
 export async function markNotificationRead(alertId: string): Promise<void> {
   await assertConsoleAdmin()

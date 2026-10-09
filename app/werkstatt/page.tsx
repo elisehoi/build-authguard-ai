@@ -43,7 +43,7 @@ export default async function HomePage() {
             your own workshop journal.
           </p>
           <div className="flex flex-wrap gap-3">
-            <ButtonLink href={context ? WERKSTATT_ACCOUNT : WERKSTATT_SIGNUP} size="lg">{context ? 'Open my notes' : 'Sign up for classes'}</ButtonLink>
+            <ButtonLink href={context ? WERKSTATT_ACCOUNT : WERKSTATT_SIGNUP} size="lg">{context ? 'Open my notes' : 'Create an account'}</ButtonLink>
             {!context && <ButtonLink href={WERKSTATT_LOGIN} size="lg" variant="outline">Log in</ButtonLink>}
           </div>
         </section>
@@ -58,6 +58,7 @@ export default async function HomePage() {
                   <h3 className="font-medium">{workshop.title}</h3>
                   <p className="font-mono text-xs text-primary">{workshop.detail}</p>
                   <p className="text-sm leading-relaxed text-muted-foreground">{workshop.body}</p>
+                  <p className="mt-auto pt-2 text-xs font-medium text-muted-foreground">Booking opens soon</p>
                 </div>
               </li>
             ))}

@@ -32,12 +32,12 @@ export const GLOSSARY = {
   },
   'password-hashing': {
     title: 'Password hashing (bcrypt)',
-    body: 'Your password goes to Supabase over HTTPS and is compared with a *bcrypt hash*. Nobody stores the password itself. bcrypt is *deliberately slow*, so guessing passwords from a stolen hash takes years instead of seconds.',
+    body: 'The user\'s password goes to Supabase over HTTPS and is compared with a *bcrypt hash*. Nobody stores the password itself. bcrypt is *deliberately slow*, so guessing passwords from a stolen hash takes years instead of seconds.',
     aliases: ['bcrypt', 'password hashing'],
   },
   'breached-password': {
     title: 'Breached password',
-    body: 'A password that already appears in *public breach data*. Attackers try these lists first. AuthGuard checks with *k-anonymity*: only the first characters of a hash leave the server, never the password.',
+    body: 'A password that already appears in *public breach data*. Attackers try these lists first. The AuthGuard SDK checks with *k-anonymity*: only the first characters of a hash leave the server, never the password.',
     aliases: ['breached password', 'public breach data', 'known data breach', 'breached'],
   },
   'password-strength': {
@@ -62,7 +62,7 @@ export const GLOSSARY = {
   },
   'tampered-token': {
     title: 'Tampered token',
-    body: 'A session cookie that was present but *failed verification*. Its *signature* no longer matches, which happens when someone edits or forges a token, for example to change the user id.',
+    body: 'A session cookie that was present but *failed verification*. This can mean an *edited, forged or expired* token, for example one changed to carry another user id.',
     aliases: ['tampered token', 'tampered', 'failed verification'],
   },
   'user-agent': {

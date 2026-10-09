@@ -8,6 +8,15 @@ import { createAuthGuardClient } from '@/lib/supabase/authguard/server'
 // everyone else has no connected apps yet.
 export type ConsoleAccess = { status: 'anonymous' } | { status: 'ok'; email: string; ownsDemoApp: boolean }
 
+/** The app id that AUTHGUARD_ADMIN_EMAILS own (the Werkstatt demo). */
+export function demoAppId(): string {
+  try {
+    return getServerEnv('authguardConsole').AUTHGUARD_APP_ID
+  } catch {
+    return process.env.AUTHGUARD_APP_ID || 'werkstatt-demo'
+  }
+}
+
 function adminEmails(): string[] {
   try {
     return getServerEnv('authguardConsole').AUTHGUARD_ADMIN_EMAILS

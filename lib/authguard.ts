@@ -9,7 +9,7 @@ import { getServerEnv } from '@/lib/env'
 
 let instance: { endpoint: string; guard: AuthGuard } | null = null
 
-function originFrom(requestHeaders: Headers): string {
+function originFrom(requestHeaders: { get(name: string): string | null }): string {
   const host = requestHeaders.get('x-forwarded-host') ?? requestHeaders.get('host') ?? 'localhost:3000'
   const proto = requestHeaders.get('x-forwarded-proto') ?? (host.startsWith('localhost') ? 'http' : 'https')
   return `${proto}://${host}`
@@ -17,9 +17,18 @@ function originFrom(requestHeaders: Headers): string {
 
 /** Returns null (and logs) when AuthGuard is not configured, so login never breaks. */
 export async function getAuthGuard(): Promise<AuthGuard | null> {
+  return guardForOrigin(originFrom(await headers()))
+}
+
+/** For the proxy, where headers() is not available: uses the incoming request instead. */
+export function getAuthGuardForRequest(request: AuthGuardRequest): AuthGuard | null {
+  return guardForOrigin(originFrom(request.headers))
+}
+
+function guardForOrigin(origin: string): AuthGuard | null {
   try {
     const env = getServerEnv('authguardClient')
-    const endpoint = env.AUTHGUARD_ENDPOINT ?? `${originFrom(await headers())}/api/v1/events`
+    const endpoint = env.AUTHGUARD_ENDPOINT ?? `${origin}/api/v1/events`
     if (instance?.endpoint !== endpoint) {
       instance = {
         endpoint,

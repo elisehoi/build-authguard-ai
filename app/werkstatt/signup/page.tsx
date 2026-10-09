@@ -14,7 +14,7 @@ export default async function SignupPage() {
   const google = await isWerkstattGoogleEnabled()
 
   return (
-    <AuthShell title="Create your account" description="You'll confirm your email before the lab opens.">
+    <AuthShell title="Create your account" description="You'll confirm your email before your first class.">
       <SignupForm action={signup} googleAction={google ? signInWithGoogle : undefined} loginHref={WERKSTATT_LOGIN} />
     </AuthShell>
   )

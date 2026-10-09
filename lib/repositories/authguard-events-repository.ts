@@ -36,11 +36,14 @@ export class AuthGuardEventsRepository {
     return z.array(authGuardEventSchema).parse(data).reverse()
   }
 
-  async listForSession(sessionId: string): Promise<AuthGuardEvent[]> {
+  async listForSession(sessionId: string, appId: string): Promise<AuthGuardEvent[]> {
+    const since = new Date(Date.now() - WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString()
     const { data, error } = await this.db
       .from('authguard_events')
       .select('*')
+      .eq('app_id', appId)
       .eq('session_id', sessionId)
+      .gte('occurred_at', since)
       .order('occurred_at', { ascending: true })
       .limit(500)
     if (error) throw new Error(`Could not load session events: ${error.message}`)
