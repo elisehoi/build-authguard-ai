@@ -1,8 +1,11 @@
 import { AlertsList } from '@/components/authguard/alerts-list'
 import { EventsTable } from '@/components/authguard/events-table'
+import { ownsDemoApp } from '@/lib/services/console-access'
 import { loadSnapshot } from '@/lib/services/console-data'
 
 export default async function ConsolePage() {
+  // The layout shows the empty state instead; pages may still render in parallel.
+  if (!(await ownsDemoApp())) return null
   const { events, alerts } = await loadSnapshot()
   const counts = {
     high: alerts.filter((alert) => alert.severity === 'high').length,

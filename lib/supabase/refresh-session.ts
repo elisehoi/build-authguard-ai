@@ -1,26 +1,24 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { getPublicEnv } from '@/lib/env.public'
-import { AUTHGUARD_HOME, AUTHGUARD_LOGIN, WERKSTATT_ACCOUNT } from '@/lib/routes'
-import { loginPathFor } from '@/lib/safe-redirect'
 
-export const PROTECTED_PREFIXES = [WERKSTATT_ACCOUNT, '/werkstatt/admin', AUTHGUARD_HOME] as const
-const PUBLIC_EXCEPTIONS = [AUTHGUARD_LOGIN] as const
+// Product-neutral: each product's proxy passes its own project and paths.
+export type RefreshConfig = {
+  url: string
+  anonKey: string
+  cookieName?: string
+  loginPath: string
+  isProtected: (pathname: string) => boolean
+}
 
-function matchesPrefix(pathname: string, prefix: string): boolean {
+export function matchesPrefix(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`)
 }
 
-function isProtected(pathname: string): boolean {
-  if (PUBLIC_EXCEPTIONS.some((path) => matchesPrefix(pathname, path))) return false
-  return PROTECTED_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix))
-}
-
-export async function updateSession(request: NextRequest): Promise<NextResponse> {
+export async function refreshSession(request: NextRequest, config: RefreshConfig): Promise<NextResponse> {
   let response = NextResponse.next({ request })
-  const env = getPublicEnv()
 
-  const supabase = createServerClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
+  const supabase = createServerClient(config.url, config.anonKey, {
+    cookieOptions: config.cookieName ? { name: config.cookieName } : undefined,
     cookies: {
       getAll() {
         return request.cookies.getAll()
@@ -40,9 +38,9 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user && isProtected(request.nextUrl.pathname)) {
+  if (!user && config.isProtected(request.nextUrl.pathname)) {
     const url = request.nextUrl.clone()
-    url.pathname = loginPathFor(request.nextUrl.pathname)
+    url.pathname = config.loginPath
     url.search = ''
     url.searchParams.set('next', request.nextUrl.pathname)
     return NextResponse.redirect(url)

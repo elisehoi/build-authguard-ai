@@ -1,5 +1,5 @@
 import { LogOut } from 'lucide-react'
-import { logout } from '@/app/auth/actions'
+import { logout } from '@/app/werkstatt/auth/actions'
 import { BrandMark } from '@/components/brand-mark'
 import { Button } from '@/components/ui/button'
 

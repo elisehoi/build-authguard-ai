@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { getServerEnv } from '@/lib/env'
 import { jsonError, parseJsonBody, routeError } from '@/lib/http'
 import { AuthGuardEventsRepository } from '@/lib/repositories/authguard-events-repository'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createAuthGuardAdminClient } from '@/lib/supabase/authguard/admin'
 import { EVENT_TYPES } from '@/lib/types'
 
 const FORBIDDEN_FIELDS = new Set(['password', 'token', 'access_token', 'refresh_token', 'email', 'ip'])
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const repository = new AuthGuardEventsRepository(createAdminClient())
+    const repository = new AuthGuardEventsRepository(createAuthGuardAdminClient())
     const event = parsed.data
     if (event.event_type === 'session_seen' && (await repository.hasRecentSessionSeen(event))) {
       return Response.json({ stored: false, reason: 'duplicate' }, { status: 202 })

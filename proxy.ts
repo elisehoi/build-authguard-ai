@@ -1,10 +1,19 @@
-import type { NextRequest } from 'next/server'
-import { updateSession } from '@/lib/supabase/middleware'
+import { NextResponse, type NextRequest } from 'next/server'
+import { WERKSTATT_HOME } from '@/lib/routes'
+import { matchesPrefix } from '@/lib/supabase/refresh-session'
+import { updateAuthGuardSession } from '@/lib/supabase/authguard/middleware'
+import { updateWerkstattSession } from '@/lib/supabase/werkstatt/middleware'
 
 // Next.js 16 renamed middleware.ts to proxy.ts. It runs before every matched
-// request so the session cookie is refreshed before any page reads it.
+// request and refreshes the session of the product being requested only:
+// Werkstatt under /werkstatt, AuthGuard on "/", /authguard and /api/authguard.
 export async function proxy(request: NextRequest) {
-  return updateSession(request)
+  const { pathname } = request.nextUrl
+  if (matchesPrefix(pathname, WERKSTATT_HOME)) return updateWerkstattSession(request)
+  if (pathname === '/' || matchesPrefix(pathname, '/authguard') || matchesPrefix(pathname, '/api/authguard')) {
+    return updateAuthGuardSession(request)
+  }
+  return NextResponse.next({ request })
 }
 
 export const config = {

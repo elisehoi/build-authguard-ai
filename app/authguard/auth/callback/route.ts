@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { reportAuthAttempt } from '@/lib/authguard'
 import { getRequestOrigin } from '@/lib/http'
-import { loginPathFor, safeNextPath } from '@/lib/safe-redirect'
-import { createClient } from '@/lib/supabase/server'
+import { AUTHGUARD_HOME, AUTHGUARD_LOGIN } from '@/lib/routes'
+import { safeNextPath } from '@/lib/safe-redirect'
+import { createAuthGuardClient } from '@/lib/supabase/authguard/server'
 
 // Google (and email links in PKCE mode) send the browser back here with a
 // one-time ?code=. Exchanging it on the server, together with the code
@@ -11,8 +11,8 @@ import { createClient } from '@/lib/supabase/server'
 export async function GET(request: NextRequest) {
   const origin = getRequestOrigin(request.headers)
   const { searchParams } = request.nextUrl
-  const next = safeNextPath(searchParams.get('next'))
-  const failure = (message: string) => NextResponse.redirect(`${origin}${loginPathFor(next)}?error=${encodeURIComponent(message)}`)
+  const next = safeNextPath(searchParams.get('next'), AUTHGUARD_HOME, AUTHGUARD_HOME)
+  const failure = (message: string) => NextResponse.redirect(`${origin}${AUTHGUARD_LOGIN}?error=${encodeURIComponent(message)}`)
 
   const providerError = searchParams.get('error_description') ?? searchParams.get('error')
   if (providerError) return failure(providerError)
@@ -20,10 +20,7 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get('code')
   if (!code) return failure('The sign-in link is missing its code. Please try again.')
 
-  const supabase = await createClient()
-  const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+  const { error } = await (await createAuthGuardClient()).auth.exchangeCodeForSession(code)
   if (error) return failure(error.message)
-
-  if (data.user.email) await reportAuthAttempt({ email: data.user.email, userId: data.user.id, success: true })
   return NextResponse.redirect(`${origin}${next}`)
 }

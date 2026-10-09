@@ -1,34 +1,21 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
-import { AsideNote, AuthShell } from '@/components/auth/auth-shell'
+import { signInWithGoogle, signup } from '@/app/werkstatt/auth/actions'
+import { AuthShell } from '@/components/auth/auth-shell'
 import { SignupForm } from '@/components/auth/signup-form'
-import { WERKSTATT_ACCOUNT } from '@/lib/routes'
+import { WERKSTATT_ACCOUNT, WERKSTATT_LOGIN } from '@/lib/routes'
 import { getAuthContext } from '@/lib/services/auth-context'
+import { isWerkstattGoogleEnabled } from '@/lib/supabase/werkstatt/google'
 
 export const metadata: Metadata = { title: 'Create account' }
 
 export default async function SignupPage() {
   if (await getAuthContext()) redirect(WERKSTATT_ACCOUNT)
+  const google = await isWerkstattGoogleEnabled()
 
   return (
-    <AuthShell
-      title="Create your account"
-      description="You'll confirm your email before the lab opens."
-      aside={
-        <>
-          <h2 className="text-lg font-semibold">Why confirm your email?</h2>
-          <AsideNote label="Proof of ownership">
-            The link contains a one-time token_hash. Opening it proves you control the inbox, so nobody can sign up with
-            your address.
-          </AsideNote>
-          <AsideNote label="No enumeration">
-            The form gives the same answer whether or not an account already exists, so it can&apos;t be used to check
-            who is registered.
-          </AsideNote>
-        </>
-      }
-    >
-      <SignupForm />
+    <AuthShell title="Create your account" description="You'll confirm your email before the lab opens.">
+      <SignupForm action={signup} googleAction={google ? signInWithGoogle : undefined} loginHref={WERKSTATT_LOGIN} />
     </AuthShell>
   )
 }

@@ -1,12 +1,13 @@
 import 'server-only'
 import { z } from 'zod'
 import { formatEnvError } from './env-errors'
-import { getPublicEnv } from './env.public'
+import { getAuthGuardPublicEnv, getWerkstattPublicEnv } from './env.public'
 
 // "server-only" makes the build fail if a client component imports this file,
 // so secrets like the service role key can never end up in the browser bundle.
 
 const groups = {
+  // AuthGuard's project only. Werkstatt never gets a service role key.
   supabaseAdmin: z.object({ SUPABASE_SERVICE_ROLE_KEY: z.string().min(1) }),
   llm: z.object({
     // Optional: on Vercel the AI Gateway authenticates automatically via OIDC.
@@ -56,10 +57,12 @@ export function getServerEnv<G extends GroupName>(group: G): GroupEnv<G> {
 
 export function validateAllEnv(): string[] {
   const problems: string[] = []
-  try {
-    getPublicEnv()
-  } catch (error) {
-    problems.push((error as Error).message)
+  for (const check of [getAuthGuardPublicEnv, getWerkstattPublicEnv]) {
+    try {
+      check()
+    } catch (error) {
+      problems.push((error as Error).message)
+    }
   }
   for (const name of Object.keys(groups) as GroupName[]) {
     try {

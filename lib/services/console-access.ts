@@ -1,24 +1,34 @@
 import 'server-only'
 import { cache } from 'react'
 import { getServerEnv } from '@/lib/env'
-import { createClient } from '@/lib/supabase/server'
+import { createAuthGuardClient } from '@/lib/supabase/authguard/server'
 
-export type ConsoleAccess = { status: 'ok'; email: string } | { status: 'anonymous' } | { status: 'forbidden' }
+// Anyone can have an AuthGuard account. Only confirmed emails on
+// AUTHGUARD_ADMIN_EMAILS own the Werkstatt demo app and see its data;
+// everyone else has no connected apps yet.
+export type ConsoleAccess = { status: 'anonymous' } | { status: 'ok'; email: string; ownsDemoApp: boolean }
 
-// Supabase login is required AND the verified email must be on the admin list.
+function adminEmails(): string[] {
+  try {
+    return getServerEnv('authguardConsole').AUTHGUARD_ADMIN_EMAILS
+  } catch {
+    return []
+  }
+}
+
 export const getConsoleAccess = cache(async (): Promise<ConsoleAccess> => {
-  const supabase = await createClient()
+  const supabase = await createAuthGuardClient()
   const { data } = await supabase.auth.getUser()
   const user = data.user
   if (!user) return { status: 'anonymous' }
 
-  let admins: string[]
-  try {
-    admins = getServerEnv('authguardConsole').AUTHGUARD_ADMIN_EMAILS
-  } catch {
-    return { status: 'forbidden' }
-  }
-  const email = user.email?.toLowerCase()
-  if (!email || !user.email_confirmed_at || !admins.includes(email)) return { status: 'forbidden' }
-  return { status: 'ok', email }
+  const email = user.email?.toLowerCase() ?? ''
+  const ownsDemoApp = Boolean(email && user.email_confirmed_at && adminEmails().includes(email))
+  return { status: 'ok', email: email || 'Signed in', ownsDemoApp }
 })
+
+/** True when the visitor may see the demo app's data. Pages use it to render nothing otherwise. */
+export async function ownsDemoApp(): Promise<boolean> {
+  const access = await getConsoleAccess()
+  return access.status === 'ok' && access.ownsDemoApp
+}
