@@ -47,6 +47,17 @@ export class AuthGuardEventsRepository {
     return z.array(authGuardEventSchema).parse(data)
   }
 
+  async lastEventAt(appId: string): Promise<string | null> {
+    const { data, error } = await this.db
+      .from('authguard_events')
+      .select('occurred_at')
+      .eq('app_id', appId)
+      .order('occurred_at', { ascending: false })
+      .limit(1)
+    if (error) throw new Error(`Could not read the last event: ${error.message}`)
+    return data?.[0]?.occurred_at ?? null
+  }
+
   async hasRecentSessionSeen(event: NewAuthGuardEvent): Promise<boolean> {
     if (!event.session_id) return false
     const since = new Date(Date.parse(event.occurred_at) - DEDUPE_WINDOW_MS).toISOString()

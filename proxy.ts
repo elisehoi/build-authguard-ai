@@ -8,7 +8,7 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Skip static assets and the Stripe webhook (Stripe sends no cookies, and
-  // the webhook must read the untouched raw body to verify the signature).
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/stripe/webhook|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)'],
+  // Skip static assets and the SDK-facing API routes: they authenticate with
+  // an API key rather than a session cookie, so there is nothing to refresh.
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/v1/events|api/v1/status|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)'],
 }
