@@ -1,10 +1,13 @@
 import 'server-only'
-import { generateText, Output, streamText } from 'ai'
+import { createGoogleGenerativeAI } from '@ai-sdk/google'
+import { generateText, Output, streamText, type LanguageModel } from 'ai'
 import { getServerEnv } from '@/lib/env'
 import type { GenerateOptions, LLMClient, StreamHandle, StreamOptions, StructuredOptions } from './llm-client'
 
-export class VercelAIClient implements LLMClient {
-  constructor(private readonly model: string) {}
+// Google Gemini through the AI SDK's Google provider. Services only see the
+// LLMClient interface, so nothing outside this file knows the vendor.
+export class GeminiClient implements LLMClient {
+  constructor(private readonly model: LanguageModel) {}
 
   async generate({ system, prompt, maxOutputTokens = 400 }: GenerateOptions): Promise<string> {
     const { text } = await generateText({ model: this.model, system, prompt, maxOutputTokens })
@@ -33,10 +36,8 @@ let client: LLMClient | null = null
 
 export function getLLMClient(): LLMClient {
   if (client) return client
-  const { LLM_API_KEY, LLM_MODEL } = getServerEnv('llm')
-  // The AI SDK's gateway reads AI_GATEWAY_API_KEY. Mapping LLM_API_KEY onto it
-  // keeps one documented variable name for this app.
-  if (LLM_API_KEY && !process.env.AI_GATEWAY_API_KEY) process.env.AI_GATEWAY_API_KEY = LLM_API_KEY
-  client = new VercelAIClient(LLM_MODEL)
+  const { GOOGLE_GENERATIVE_AI_API_KEY, LLM_MODEL } = getServerEnv('llm')
+  const google = createGoogleGenerativeAI({ apiKey: GOOGLE_GENERATIVE_AI_API_KEY })
+  client = new GeminiClient(google(LLM_MODEL))
   return client
 }

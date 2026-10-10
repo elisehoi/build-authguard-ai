@@ -9,10 +9,10 @@ import { getAuthGuardPublicEnv, getWerkstattPublicEnv } from './env.public'
 const groups = {
   // AuthGuard's project only. Werkstatt never gets a service role key.
   supabaseAdmin: z.object({ SUPABASE_SERVICE_ROLE_KEY: z.string().min(1) }),
+  // Google Gemini (AI Studio key). LLM_MODEL is a Gemini model id.
   llm: z.object({
-    // Optional: on Vercel the AI Gateway authenticates automatically via OIDC.
-    LLM_API_KEY: z.string().min(1).optional(),
-    LLM_MODEL: z.string().min(1).default('openai/gpt-5-mini'),
+    GOOGLE_GENERATIVE_AI_API_KEY: z.string().min(1),
+    LLM_MODEL: z.string().min(1).default('gemini-2.5-flash'),
   }),
   // Used by the Events API to authenticate incoming SDK requests.
   authguardApi: z.object({ AUTHGUARD_API_KEY: z.string().min(16) }),
