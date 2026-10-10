@@ -24,7 +24,7 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
 
   return (
     <div className="flex min-h-dvh flex-col bg-muted">
-      <ConsoleHeader email={access.email} notifications={notifications} />
+      <ConsoleHeader email={access.email} demoMode={access.demoMode} notifications={notifications} />
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-4 py-8 md:px-6">
         {access.ownsDemoApp ? children : <NoAppsConnected />}
       </main>

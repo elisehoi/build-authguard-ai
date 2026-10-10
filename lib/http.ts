@@ -4,7 +4,7 @@ import type { z } from 'zod'
 
 export type ApiError = { error: { code: string; message: string } }
 
-export function jsonError(status: 400 | 401 | 403 | 404 | 500 | 502, code: string, message: string) {
+export function jsonError(status: 400 | 401 | 403 | 404 | 429 | 500 | 502, code: string, message: string) {
   return NextResponse.json<ApiError>({ error: { code, message } }, { status })
 }
 

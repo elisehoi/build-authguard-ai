@@ -5,8 +5,16 @@ import { createAuthGuardClient } from '@/lib/supabase/authguard/server'
 
 // Anyone can have an AuthGuard account. Only confirmed emails on
 // AUTHGUARD_ADMIN_EMAILS own the Werkstatt demo app and see its data;
-// everyone else has no connected apps yet.
-export type ConsoleAccess = { status: 'anonymous' } | { status: 'ok'; email: string; ownsDemoApp: boolean }
+// everyone else has no connected apps yet. In demo mode, every confirmed
+// email owns the demo app.
+export type ConsoleAccess =
+  | { status: 'anonymous' }
+  | { status: 'ok'; userId: string; email: string; ownsDemoApp: boolean; demoMode: boolean }
+
+/** AUTHGUARD_DEMO_MODE=true opens the demo app to every confirmed account. Anything else keeps it closed. */
+export function isDemoMode(): boolean {
+  return process.env.AUTHGUARD_DEMO_MODE === 'true'
+}
 
 /** The app id that AUTHGUARD_ADMIN_EMAILS own (the Werkstatt demo). */
 export function demoAppId(): string {
@@ -32,8 +40,9 @@ export const getConsoleAccess = cache(async (): Promise<ConsoleAccess> => {
   if (!user) return { status: 'anonymous' }
 
   const email = user.email?.toLowerCase() ?? ''
-  const ownsDemoApp = Boolean(email && user.email_confirmed_at && adminEmails().includes(email))
-  return { status: 'ok', email: email || 'Signed in', ownsDemoApp }
+  const demoMode = isDemoMode()
+  const ownsDemoApp = Boolean(email && user.email_confirmed_at && (demoMode || adminEmails().includes(email)))
+  return { status: 'ok', userId: user.id, email: email || 'Signed in', ownsDemoApp, demoMode }
 })
 
 /** True when the visitor may see the demo app's data. Pages use it to render nothing otherwise. */

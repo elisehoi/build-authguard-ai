@@ -74,7 +74,10 @@ export function AssistantChat() {
         )}
         {error && (
           <p role="alert" className="text-sm text-destructive">
-            The assistant couldn&apos;t answer. If your login expired, sign in again; otherwise try once more.
+            {/* The transport puts the response body in error.message; 429 carries the demo_limit code. */}
+            {error.message.includes('demo_limit')
+              ? 'Demo limit reached, please try again later.'
+              : 'The assistant couldn\u2019t answer. If your login expired, sign in again; otherwise try once more.'}
           </p>
         )}
       </div>

@@ -14,9 +14,9 @@ const LINKS = [
   { href: '/authguard/assistant', label: 'Assistant', exact: false },
 ] as const
 
-type ConsoleHeaderProps = { email: string; notifications?: { count: number; items: UnreadNotification[] } }
+type ConsoleHeaderProps = { email: string; demoMode?: boolean; notifications?: { count: number; items: UnreadNotification[] } }
 
-export function ConsoleHeader({ email, notifications }: ConsoleHeaderProps) {
+export function ConsoleHeader({ email, demoMode = false, notifications }: ConsoleHeaderProps) {
   const pathname = usePathname()
 
   return (
@@ -27,6 +27,9 @@ export function ConsoleHeader({ email, notifications }: ConsoleHeaderProps) {
             <ShieldCheck className="size-5 text-primary" aria-hidden="true" />
             AuthGuard
           </Link>
+          {demoMode && (
+            <span className="rounded-full border border-primary/30 bg-accent px-2 py-0.5 text-xs font-medium text-primary">Demo mode</span>
+          )}
           <nav aria-label="Console" className="flex gap-1">
             {LINKS.map((link) => {
               const active = link.exact ? pathname === link.href : pathname.startsWith(link.href)

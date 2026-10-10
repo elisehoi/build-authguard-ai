@@ -1,6 +1,6 @@
 import { getLLMClient } from '@/lib/ai/vercel-ai-client'
 import { jsonError, parseJsonBody, routeError } from '@/lib/http'
-import { denyUnlessAdmin } from '@/lib/services/console-api'
+import { denyOverAiLimit, denyUnlessAdmin } from '@/lib/services/console-api'
 import { loadSession } from '@/lib/services/console-data'
 import { ExplainService, explainFieldRequestSchema, type ClaimSummary } from '@/lib/services/explain-service'
 
@@ -10,6 +10,9 @@ export async function POST(request: Request) {
 
   const body = await parseJsonBody(request, explainFieldRequestSchema)
   if (!body.ok) return body.response
+
+  const limited = await denyOverAiLimit()
+  if (limited) return limited
 
   try {
     const events = await loadSession(body.data.sessionId)

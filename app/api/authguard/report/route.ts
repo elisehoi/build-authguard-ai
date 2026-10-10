@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { getLLMClient } from '@/lib/ai/vercel-ai-client'
 import { jsonError, parseJsonBody, routeError } from '@/lib/http'
 import { loadSnapshot } from '@/lib/services/console-data'
-import { denyUnlessAdmin } from '@/lib/services/console-api'
+import { denyOverAiLimit, denyUnlessAdmin } from '@/lib/services/console-api'
 import { AlertAiService } from '@/lib/services/incident-service'
 
 const schema = z.object({ alertId: z.string().min(1).max(64) })
@@ -13,6 +13,9 @@ export async function POST(request: Request) {
 
   const body = await parseJsonBody(request, schema)
   if (!body.ok) return body.response
+
+  const limited = await denyOverAiLimit()
+  if (limited) return limited
 
   try {
     const { alerts } = await loadSnapshot()
