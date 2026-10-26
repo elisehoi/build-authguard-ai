@@ -3,6 +3,7 @@ import { z } from 'zod'
 import type { LLMClient } from '@/lib/ai/llm-client'
 import { ALERT_EXPLAIN_SYSTEM_PROMPT, SECURITY_REPORT_SYSTEM_PROMPT, withFacts } from '@/lib/ai/prompts'
 import type { Alert } from '@/lib/detection/types'
+import { clientFamily } from '@/lib/detection/user-agent'
 
 export const LEARN_MORE_LINKS = [
   'https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html',
@@ -29,12 +30,13 @@ export const securityReportSchema = z.object({
 })
 export type SecurityReport = z.infer<typeof securityReportSchema>
 
-// Only the alert, its evidence and the rule description go to the model.
+// Only the alert, its evidence and the rule description go to the model. The
+// raw User-Agent is visitor-controlled, so it is reduced to browser and OS family.
 function alertFacts(alert: Alert) {
   return {
     rule: { id: alert.ruleId, description: alert.ruleDescription, severity: alert.severity },
     alert: { title: alert.title, summary: alert.summary, subject: alert.subject, lastSeen: alert.occurredAt },
-    evidence: alert.evidence,
+    evidence: alert.evidence.map(({ userAgent, ...item }) => ({ ...item, client: clientFamily(userAgent) })),
   }
 }
 

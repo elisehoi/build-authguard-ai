@@ -1,6 +1,7 @@
 import 'server-only'
 import { cache } from 'react'
 import { createDefaultDetectionEngine } from '@/lib/detection/engine'
+import { clientFamily } from '@/lib/detection/user-agent'
 import type { Alert } from '@/lib/detection/types'
 import { AuthGuardEventsRepository } from '@/lib/repositories/authguard-events-repository'
 import { NotificationsRepository } from '@/lib/repositories/notifications-repository'
@@ -59,7 +60,9 @@ export async function markNotificationRead(alertId: string): Promise<void> {
   await new NotificationsRepository(createAuthGuardAdminClient()).markRead(alertId)
 }
 
-// What the assistant is allowed to see: alerts and events, with hashes cut to a prefix.
+// What the assistant is allowed to see: alerts and events, with hashes cut to a
+// prefix. The raw User-Agent is visitor-controlled text, so only its browser and
+// OS family ("Chrome|Windows") reaches the model, never the string itself.
 export function buildAssistantFacts({ events, alerts }: ConsoleSnapshot) {
   return {
     alerts: alerts.slice(0, 25).map((alert) => ({
@@ -79,7 +82,7 @@ export function buildAssistantFacts({ events, alerts }: ConsoleSnapshot) {
       sessionId: event.session_id,
       userRef: event.user_ref?.slice(0, 8) ?? null,
       emailHashPrefix: event.email_hash?.slice(0, 8) ?? null,
-      userAgent: event.user_agent,
+      client: clientFamily(event.user_agent),
       ipHashPrefix: event.ip_hash?.slice(0, 8) ?? null,
       details: event.payload,
     })),

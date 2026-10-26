@@ -11,7 +11,7 @@ export default function AuthGuardError({ error, reset }: { error: Error & { dige
     <main className="mx-auto flex min-h-dvh max-w-md flex-col items-start justify-center gap-4 px-4">
       <p className="font-mono text-xs text-destructive">Something broke</p>
       <h1 className="text-2xl font-semibold tracking-tight">This page couldn&apos;t load.</h1>
-      <p className="leading-relaxed text-muted-foreground">It may be a temporary problem or a missing configuration value.</p>
+      <p className="leading-relaxed text-muted-foreground">Something went wrong on our side. Please try again in a moment.</p>
       {error.digest && <p className="font-mono text-xs text-muted-foreground">Reference: {error.digest}</p>}
       <div className="flex gap-2">
         <Button onClick={reset}>Try again</Button>
