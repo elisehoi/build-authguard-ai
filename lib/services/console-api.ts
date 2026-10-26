@@ -1,5 +1,6 @@
 import 'server-only'
 import type { NextResponse } from 'next/server'
+import { AUTH_ERROR_MESSAGES } from '@/lib/auth/messages'
 import { jsonError, routeError, type ApiError } from '@/lib/http'
 import { takeAiRequest } from './ai-rate-limit'
 import { getConsoleAccess } from './console-access'
@@ -9,6 +10,7 @@ export const DEMO_LIMIT_MESSAGE = 'Demo limit reached, please try again later.'
 // Every console API route calls this first: a login AND ownership of a connected app.
 export async function denyUnlessAdmin(): Promise<NextResponse<ApiError> | null> {
   const access = await getConsoleAccess()
+  if (access.status === 'unavailable') return jsonError(503, 'unavailable', AUTH_ERROR_MESSAGES.unavailable)
   if (access.status === 'anonymous') return jsonError(401, 'unauthenticated', 'Please log in again.')
   if (!access.ownsDemoApp) return jsonError(403, 'no_connected_apps', 'This account has no connected apps yet.')
   return null

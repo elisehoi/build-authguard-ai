@@ -1,8 +1,9 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import { BrandMark } from '@/components/brand-mark'
 import { ButtonLink } from '@/components/button-link'
 import { WERKSTATT_ACCOUNT, WERKSTATT_LOGIN, WERKSTATT_SIGNUP } from '@/lib/routes'
-import { getAuthContext } from '@/lib/services/auth-context'
+import { getAuthContext } from '@/lib/werkstatt/auth-context'
 
 const WORKSHOPS = [
   { title: 'Hand-cut dovetails', detail: 'Saturday, 6 hours', body: 'Mark, saw and chisel a drawer corner that fits without glue.', image: '/werkstatt/dovetail.png' },
@@ -69,6 +70,9 @@ export default async function HomePage() {
       <footer className="border-t bg-card">
         <div className="mx-auto max-w-6xl px-4 py-6 text-sm leading-relaxed text-muted-foreground md:px-6">
           Werkstatt woodworking school. Classes run Thursday to Sunday.
+          <br />
+          Werkstatt is a fictional demo app, used to show{' '}
+          <Link href="/" className="underline underline-offset-4 hover:text-foreground">AuthGuard</Link> monitoring a real sign-in flow.
         </div>
       </footer>
     </div>

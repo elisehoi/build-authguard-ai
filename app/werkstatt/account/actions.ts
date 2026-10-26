@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { WERKSTATT_ACCOUNT } from '@/lib/routes'
 import { NotesRepository } from '@/lib/repositories/notes-repository'
-import { getAuthContext } from '@/lib/services/auth-context'
+import { getAuthContext } from '@/lib/werkstatt/auth-context'
 
 export type NoteActionState = { status: 'idle' } | { status: 'ok' } | { status: 'error'; message: string }
 

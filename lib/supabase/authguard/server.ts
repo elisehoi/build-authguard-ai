@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { getAuthGuardPublicEnv } from '@/lib/env.public'
+import { fetchWithTimeout } from '../fetch-with-timeout'
 
 // AuthGuard's Supabase project, bound to the current request's cookies.
 // A new client per request, so sessions of different users never mix.
@@ -11,6 +12,7 @@ export async function createAuthGuardClient(): Promise<SupabaseClient> {
   const env = getAuthGuardPublicEnv()
 
   return createServerClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
+    global: { fetch: fetchWithTimeout() },
     cookies: {
       getAll() {
         return cookieStore.getAll()

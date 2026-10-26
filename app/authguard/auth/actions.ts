@@ -3,8 +3,9 @@
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import type { AuthFormState } from '@/lib/auth/form-state'
+import { withAuthError } from '@/lib/auth/messages'
 import { passwordLogin, passwordSignup, startGoogleSignIn } from '@/lib/auth/flows'
-import { getRequestOrigin } from '@/lib/http'
+import { getSiteOrigin } from '@/lib/http'
 import { AUTHGUARD_AUTH_CALLBACK, AUTHGUARD_HOME, AUTHGUARD_LOGIN } from '@/lib/routes'
 import { safeNextPath } from '@/lib/safe-redirect'
 import { createAuthGuardClient } from '@/lib/supabase/authguard/server'
@@ -20,7 +21,7 @@ export async function login(_prev: AuthFormState, formData: FormData): Promise<A
 }
 
 export async function signup(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
-  const origin = getRequestOrigin(await headers())
+  const origin = getSiteOrigin(await headers())
   const result = await passwordSignup(await createAuthGuardClient(), formData, `${origin}${AUTHGUARD_AUTH_CALLBACK}`)
   if (!result.ok) return result.state
   if (result.signedIn) redirect(AUTHGUARD_HOME)
@@ -28,11 +29,11 @@ export async function signup(_prev: AuthFormState, formData: FormData): Promise<
 }
 
 export async function signInWithGoogle(formData: FormData): Promise<void> {
-  const origin = getRequestOrigin(await headers())
+  const origin = getSiteOrigin(await headers())
   const next = nextFrom(formData)
   const callback = `${origin}${AUTHGUARD_AUTH_CALLBACK}`
   const url = await startGoogleSignIn(await createAuthGuardClient(), next === AUTHGUARD_HOME ? callback : `${callback}?next=${encodeURIComponent(next)}`)
-  redirect(url ?? `${AUTHGUARD_LOGIN}?error=${encodeURIComponent('Google sign-in is not available right now.')}`)
+  redirect(url ?? withAuthError(AUTHGUARD_LOGIN, 'google_unavailable'))
 }
 
 export async function logout(): Promise<void> {

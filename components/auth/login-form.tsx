@@ -6,6 +6,7 @@ import { Loader2 } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import type { AuthFormAction, AuthFormState, GoogleAction } from '@/lib/auth/form-state'
+import { AuthMessage } from './auth-message'
 import { FormField } from './form-field'
 import { GoogleButton } from './google-button'
 
@@ -30,7 +31,9 @@ export function LoginForm({ action: loginAction, googleAction, signupHref, next,
     <div className="flex flex-col gap-5">
       {message && (
         <Alert variant="destructive" role="alert">
-          <AlertDescription>{message}</AlertDescription>
+          <AlertDescription>
+            <p><AuthMessage text={message} /></p>
+          </AlertDescription>
         </Alert>
       )}
       <form action={action} className="flex flex-col gap-4" noValidate>

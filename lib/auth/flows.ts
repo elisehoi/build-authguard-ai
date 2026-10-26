@@ -1,7 +1,9 @@
 import 'server-only'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { z } from 'zod'
+import { isSupabaseUnavailable } from '@/lib/supabase/availability'
 import type { AuthField, AuthFormState } from './form-state'
+import { AUTH_ERROR_MESSAGES, type AuthErrorCode } from './messages'
 
 // Product-neutral auth steps. Each product's server actions pass in their own
 // Supabase client and decide where to redirect and what to report.
@@ -60,6 +62,9 @@ export async function passwordLogin(supabase: SupabaseClient, formData: FormData
     // cannot be used to discover which emails have accounts.
     return { ok: false, state: { status: 'error', message: 'Invalid email or password.' }, invalidCredentialsFor: parsed.data.email }
   }
+  if (isSupabaseUnavailable(error)) {
+    return { ok: false, state: { status: 'error', message: AUTH_ERROR_MESSAGES.unavailable } }
+  }
   console.error(`[auth] Unexpected login error: ${error.code ?? error.status}`)
   return { ok: false, state: { status: 'error', message: 'Something went wrong while signing in. Please try again.' } }
 }
@@ -86,6 +91,7 @@ export async function passwordSignup(supabase: SupabaseClient, formData: FormDat
     if (error.code === 'email_address_invalid') return { ok: false, state: { status: 'error', message: 'This email address cannot be used.', fieldErrors: { email: 'Use a real email address you control.' } } }
     if (error.status === 429) return { ok: false, state: { status: 'error', message: 'Too many sign-up emails were sent. Try again later.' } }
     if (error.code === 'user_already_exists') return { ok: false, state: { status: 'check-email', email } }
+    if (isSupabaseUnavailable(error)) return { ok: false, state: { status: 'error', message: AUTH_ERROR_MESSAGES.unavailable } }
     console.error(`[auth] Unexpected sign-up error: ${error.code ?? error.status}`)
     return { ok: false, state: { status: 'error', message: 'Something went wrong while creating your account. Please try again.' } }
   }
@@ -113,9 +119,20 @@ const confirmSchema = z.object({
 
 // Used when the email template links to <product>/auth/confirm?token_hash=...&type=email.
 // Unlike the PKCE flow, this works even if the link opens in another browser.
-export async function confirmEmail(supabase: SupabaseClient, params: URLSearchParams): Promise<{ ok: true } | { ok: false; message: string }> {
+export async function confirmEmail(supabase: SupabaseClient, params: URLSearchParams): Promise<{ ok: true } | { ok: false; code: AuthErrorCode }> {
   const parsed = confirmSchema.safeParse({ token_hash: params.get('token_hash'), type: params.get('type') })
-  if (!parsed.success) return { ok: false, message: 'This confirmation link is invalid.' }
+  if (!parsed.success) return { ok: false, code: 'link_incomplete' }
   const { error } = await supabase.auth.verifyOtp(parsed.data)
-  return error ? { ok: false, message: error.message } : { ok: true }
+  if (!error) return { ok: true }
+  return { ok: false, code: isSupabaseUnavailable(error) ? 'unavailable' : 'link_expired' }
+}
+
+// The ?code= exchange shared by both products' /auth/callback routes.
+export async function exchangeCode(
+  supabase: SupabaseClient,
+  code: string,
+): Promise<{ ok: true; userId: string; email: string | undefined } | { ok: false; code: AuthErrorCode }> {
+  const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+  if (error) return { ok: false, code: isSupabaseUnavailable(error) ? 'unavailable' : 'link_expired' }
+  return { ok: true, userId: data.user.id, email: data.user.email }
 }

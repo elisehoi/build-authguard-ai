@@ -2,6 +2,7 @@ import 'server-only'
 import { createClient as createSupabaseClient, type SupabaseClient } from '@supabase/supabase-js'
 import { getAuthGuardPublicEnv } from '@/lib/env.public'
 import { getServerEnv } from '@/lib/env'
+import { fetchWithTimeout } from '../fetch-with-timeout'
 
 // The service role key BYPASSES Row Level Security. It belongs to AuthGuard's
 // project and is used only for the authguard_* tables (the Events API writes,
@@ -14,6 +15,7 @@ export function createAuthGuardAdminClient(): SupabaseClient {
   const { SUPABASE_SERVICE_ROLE_KEY } = getServerEnv('supabaseAdmin')
   adminClient = createSupabaseClient(NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
+    global: { fetch: fetchWithTimeout() },
   })
   return adminClient
 }

@@ -3,26 +3,21 @@ import { headers } from 'next/headers'
 import { after } from 'next/server'
 import { createAuthGuard, type AuthGuard, type AuthGuardRequest } from '@/lib/authguard-sdk'
 import { getServerEnv } from '@/lib/env'
+import { getRequestOrigin } from '@/lib/http'
 
 // The only place Werkstatt touches AuthGuard: it configures the SDK, and the
 // SDK talks to the Events API over HTTP like any third-party client would.
 
 let instance: { endpoint: string; guard: AuthGuard } | null = null
 
-function originFrom(requestHeaders: { get(name: string): string | null }): string {
-  const host = requestHeaders.get('x-forwarded-host') ?? requestHeaders.get('host') ?? 'localhost:3000'
-  const proto = requestHeaders.get('x-forwarded-proto') ?? (host.startsWith('localhost') ? 'http' : 'https')
-  return `${proto}://${host}`
-}
-
 /** Returns null (and logs) when AuthGuard is not configured, so login never breaks. */
 export async function getAuthGuard(): Promise<AuthGuard | null> {
-  return guardForOrigin(originFrom(await headers()))
+  return guardForOrigin(getRequestOrigin(await headers()))
 }
 
 /** For the proxy, where headers() is not available: uses the incoming request instead. */
 export function getAuthGuardForRequest(request: AuthGuardRequest): AuthGuard | null {
-  return guardForOrigin(originFrom(request.headers))
+  return guardForOrigin(getRequestOrigin(request.headers))
 }
 
 function guardForOrigin(origin: string): AuthGuard | null {

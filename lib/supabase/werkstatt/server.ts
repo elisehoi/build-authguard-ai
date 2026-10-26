@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { getWerkstattPublicEnv } from '@/lib/env.public'
+import { fetchWithTimeout } from '../fetch-with-timeout'
 import { WERKSTATT_AUTH_COOKIE } from './config'
 
 // Werkstatt's own Supabase project (logins and notes), bound to the current
@@ -13,6 +14,7 @@ export async function createWerkstattClient(): Promise<SupabaseClient> {
 
   return createServerClient(env.NEXT_PUBLIC_WERKSTATT_SUPABASE_URL, env.NEXT_PUBLIC_WERKSTATT_SUPABASE_ANON_KEY, {
     cookieOptions: { name: WERKSTATT_AUTH_COOKIE },
+    global: { fetch: fetchWithTimeout() },
     cookies: {
       getAll() {
         return cookieStore.getAll()

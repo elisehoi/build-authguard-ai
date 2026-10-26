@@ -1,6 +1,8 @@
 import 'server-only'
+import { headers } from 'next/headers'
 import { cache } from 'react'
 import { getServerEnv } from '@/lib/env'
+import { AUTH_UNAVAILABLE_HEADERS, getUserWithin, isSupabaseUnavailable } from '@/lib/supabase/availability'
 import { createAuthGuardClient } from '@/lib/supabase/authguard/server'
 
 // Anyone can have an AuthGuard account. Only confirmed emails on
@@ -9,6 +11,8 @@ import { createAuthGuardClient } from '@/lib/supabase/authguard/server'
 // email owns the demo app.
 export type ConsoleAccess =
   | { status: 'anonymous' }
+  /** AuthGuard's Supabase project could not be reached (paused, waking, timed out). */
+  | { status: 'unavailable' }
   | { status: 'ok'; userId: string; email: string; ownsDemoApp: boolean; demoMode: boolean }
 
 /** AUTHGUARD_DEMO_MODE=true opens the demo app to every confirmed account. Anything else keeps it closed. */
@@ -34,10 +38,11 @@ function adminEmails(): string[] {
 }
 
 export const getConsoleAccess = cache(async (): Promise<ConsoleAccess> => {
+  // The proxy already waited for Supabase on this request and got no answer.
+  if ((await headers()).get(AUTH_UNAVAILABLE_HEADERS.authguard)) return { status: 'unavailable' }
   const supabase = await createAuthGuardClient()
-  const { data } = await supabase.auth.getUser()
-  const user = data.user
-  if (!user) return { status: 'anonymous' }
+  const { user, error } = await getUserWithin(supabase)
+  if (!user) return isSupabaseUnavailable(error) ? { status: 'unavailable' } : { status: 'anonymous' }
 
   const email = user.email?.toLowerCase() ?? ''
   const demoMode = isDemoMode()

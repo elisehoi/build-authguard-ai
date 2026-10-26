@@ -1,10 +1,10 @@
 import 'server-only'
 import { NextResponse } from 'next/server'
-import type { z } from 'zod'
+import { z } from 'zod'
 
 export type ApiError = { error: { code: string; message: string } }
 
-export function jsonError(status: 400 | 401 | 403 | 404 | 429 | 500 | 502, code: string, message: string) {
+export function jsonError(status: 400 | 401 | 403 | 404 | 429 | 500 | 502 | 503, code: string, message: string) {
   return NextResponse.json<ApiError>({ error: { code, message } }, { status })
 }
 
@@ -37,10 +37,23 @@ export function routeError(error: unknown, context: string) {
   return jsonError(502, 'upstream_error', 'The request could not be completed. Please try again.')
 }
 
-export function getRequestOrigin(headers: Headers): string {
+export function getRequestOrigin(headers: { get(name: string): string | null }): string {
   const host = headers.get('x-forwarded-host') ?? headers.get('host') ?? 'localhost:3000'
   const proto = headers.get('x-forwarded-proto') ?? (host.startsWith('localhost') ? 'http' : 'https')
   return `${proto}://${host}`
+}
+
+const siteUrlSchema = z.url()
+
+/**
+ * The public origin for links and redirects (auth callbacks, emailRedirectTo,
+ * email links). SITE_URL wins when set, so forwarded headers can never change
+ * where users are sent; without it the request's own host is used, which is
+ * what local development and preview deployments need.
+ */
+export function getSiteOrigin(headers: { get(name: string): string | null }): string {
+  const parsed = siteUrlSchema.safeParse(process.env.SITE_URL)
+  return parsed.success ? new URL(parsed.data).origin : getRequestOrigin(headers)
 }
 
 export function getClientIp(headers: Headers): string | null {

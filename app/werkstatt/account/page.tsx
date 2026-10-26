@@ -3,7 +3,7 @@ import { NoteComposer } from '@/components/dashboard/note-composer'
 import { NotesList } from '@/components/dashboard/notes-list'
 import { NotesRepository } from '@/lib/repositories/notes-repository'
 import { WERKSTATT_ACCOUNT } from '@/lib/routes'
-import { requireAuthContext } from '@/lib/services/auth-context'
+import { requireAuthContext } from '@/lib/werkstatt/auth-context'
 
 export const metadata: Metadata = { title: 'My workshop notes' }
 

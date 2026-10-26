@@ -6,6 +6,7 @@ import { Loader2, MailCheck } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import type { AuthFormAction, AuthFormState, GoogleAction } from '@/lib/auth/form-state'
+import { AuthMessage } from './auth-message'
 import { FormField } from './form-field'
 import { GoogleButton } from './google-button'
 
@@ -16,10 +17,12 @@ type SignupFormProps = {
   /** Omit when Google sign-in is not enabled for the product's project. */
   googleAction?: GoogleAction
   loginHref: string
+  /** Shown above the form until the visitor submits it, e.g. when the database is asleep. */
+  notice?: string
 }
 
 // Used by both products; each passes its own server actions and links.
-export function SignupForm({ action: signupAction, googleAction, loginHref }: SignupFormProps) {
+export function SignupForm({ action: signupAction, googleAction, loginHref, notice }: SignupFormProps) {
   const [state, action, pending] = useActionState(signupAction, initialState)
 
   if (state.status === 'check-email') {
@@ -36,11 +39,15 @@ export function SignupForm({ action: signupAction, googleAction, loginHref }: Si
 
   const fieldErrors = state.status === 'error' ? state.fieldErrors : undefined
 
+  const message = state.status === 'error' ? state.message : notice
+
   return (
     <div className="flex flex-col gap-5">
-      {state.status === 'error' && (
+      {message && (
         <Alert variant="destructive" role="alert">
-          <AlertDescription>{state.message}</AlertDescription>
+          <AlertDescription>
+            <p><AuthMessage text={message} /></p>
+          </AlertDescription>
         </Alert>
       )}
       <form action={action} className="flex flex-col gap-4" noValidate>
