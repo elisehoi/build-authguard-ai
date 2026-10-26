@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { LocalTime } from '@/components/local-time'
+import { EVENT_TERMS } from '@/lib/authguard/glossary'
 import type { AuthGuardEvent } from '@/lib/types'
 import { Explain } from './explain'
 
@@ -22,9 +23,9 @@ export function EventsTable({ events }: { events: AuthGuardEvent[] }) {
         <thead className="border-b bg-muted/50 font-mono text-xs text-muted-foreground">
           <tr>
             <th scope="col" className="px-3 py-2 font-medium">Time</th>
-            <th scope="col" className="px-3 py-2 font-medium">Event</th>
-            <th scope="col" className="px-3 py-2 font-medium">Session</th>
-            <th scope="col" className="px-3 py-2 font-medium">User ref</th>
+            <th scope="col" className="px-3 py-2 font-medium"><Explain term="auth-event">Event</Explain></th>
+            <th scope="col" className="px-3 py-2 font-medium"><Explain term="session-id">Session</Explain></th>
+            <th scope="col" className="px-3 py-2 font-medium"><Explain term="user-ref">User ref</Explain></th>
             <th scope="col" className="px-3 py-2 font-medium"><Explain term="user-agent">Client</Explain></th>
             <th scope="col" className="px-3 py-2 font-medium"><Explain term="ip-hash">IP hash</Explain></th>
           </tr>
@@ -33,7 +34,9 @@ export function EventsTable({ events }: { events: AuthGuardEvent[] }) {
           {events.map((event) => (
             <tr key={event.id}>
               <td className="px-3 py-2 whitespace-nowrap"><LocalTime iso={event.occurred_at} /></td>
-              <td className="px-3 py-2">{event.event_type}</td>
+              <td className="px-3 py-2">
+                {EVENT_TERMS[event.event_type] ? <Explain term={EVENT_TERMS[event.event_type]}>{event.event_type}</Explain> : event.event_type}
+              </td>
               <td className="px-3 py-2">
                 {event.session_id ? (
                   <Link href={`/authguard/sessions/${encodeURIComponent(event.session_id)}`} className="text-primary underline-offset-4 hover:underline">

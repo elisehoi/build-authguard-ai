@@ -1,5 +1,7 @@
 import { AlertsList } from '@/components/authguard/alerts-list'
 import { EventsTable } from '@/components/authguard/events-table'
+import { Explain } from '@/components/authguard/explain'
+import type { GlossaryTerm } from '@/lib/authguard/glossary'
 import { ownsDemoApp } from '@/lib/services/console-access'
 import { loadSnapshot, loadUnreadNotifications } from '@/lib/services/console-data'
 
@@ -14,11 +16,11 @@ export default async function ConsolePage() {
     medium: alerts.filter((alert) => alert.severity === 'medium').length,
     low: alerts.filter((alert) => alert.severity === 'low').length,
   }
-  const stats = [
-    { label: 'Events, last 7 days', value: events.length, tone: 'text-foreground' },
-    { label: 'High alerts', value: counts.high, tone: 'text-destructive' },
-    { label: 'Medium alerts', value: counts.medium, tone: 'text-warning' },
-    { label: 'Low alerts', value: counts.low, tone: 'text-primary' },
+  const stats: { label: string; term: GlossaryTerm; value: number; tone: string }[] = [
+    { label: 'Events, last 7 days', term: 'auth-event', value: events.length, tone: 'text-foreground' },
+    { label: 'High alerts', term: 'severity-high', value: counts.high, tone: 'text-destructive' },
+    { label: 'Medium alerts', term: 'severity-medium', value: counts.medium, tone: 'text-warning' },
+    { label: 'Low alerts', term: 'severity-low', value: counts.low, tone: 'text-primary' },
   ]
 
   return (
@@ -31,7 +33,7 @@ export default async function ConsolePage() {
       <dl className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {stats.map((stat) => (
           <div key={stat.label} className="rounded-lg border bg-card p-4">
-            <dt className="text-sm text-muted-foreground">{stat.label}</dt>
+            <dt className="text-sm text-muted-foreground"><Explain term={stat.term}>{stat.label}</Explain></dt>
             <dd className={`mt-1 font-mono text-3xl font-semibold ${stat.tone}`}>{stat.value}</dd>
           </div>
         ))}

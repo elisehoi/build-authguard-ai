@@ -3,6 +3,7 @@
 import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { GLOSSARY, type GlossaryTerm } from '@/lib/authguard/glossary'
+import { cn } from '@/lib/utils'
 
 const WIDTH = 280
 const GAP = 6
@@ -23,8 +24,9 @@ function Highlighted({ text }: { text: string }) {
  * A glossary term with a small popover. Opens on hover, on keyboard focus and
  * on click or tap (which pins it open); Escape or a click elsewhere closes it.
  * The popover is portalled to <body>, so table or card overflow never clips it.
+ * The trigger sits above stretched card links (relative z-10), so it stays hoverable inside them.
  */
-export function Explain({ term, children }: { term: GlossaryTerm; children?: React.ReactNode }) {
+export function Explain({ term, children, plain = false }: { term: GlossaryTerm; children?: React.ReactNode; /** No dotted underline, for triggers that already look like a label. */ plain?: boolean }) {
   const entry = GLOSSARY[term]
   const id = useId()
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -105,7 +107,8 @@ export function Explain({ term, children }: { term: GlossaryTerm; children?: Rea
         onMouseEnter={show}
         onMouseLeave={hideSoon}
         onFocus={show}
-        onBlur={() => !pinned && setOpen(false)}
+        // Moving focus into the pop-up (to select its text) keeps it open.
+        onBlur={(event) => !pinned && !popupRef.current?.contains(event.relatedTarget as Node | null) && setOpen(false)}
         onClick={() => {
           if (pinned) close()
           else {
@@ -113,7 +116,10 @@ export function Explain({ term, children }: { term: GlossaryTerm; children?: Rea
             show()
           }
         }}
-        className="inline cursor-help rounded-sm text-left underline decoration-[#2563EB]/50 decoration-dotted underline-offset-4 hover:decoration-[#2563EB] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563EB]"
+        className={cn(
+          "relative z-10 inline cursor-help rounded-sm text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563EB]",
+          !plain && "underline decoration-[#2563EB]/50 decoration-dotted underline-offset-4 hover:decoration-[#2563EB]",
+        )}
       >
         {children ?? entry.title}
       </button>
@@ -123,10 +129,11 @@ export function Explain({ term, children }: { term: GlossaryTerm; children?: Rea
             ref={popupRef}
             id={id}
             role="tooltip"
+            tabIndex={-1}
             onMouseEnter={show}
             onMouseLeave={hideSoon}
             style={{ top: position?.top ?? -9999, left: position?.left ?? -9999, width: Math.min(WIDTH, typeof window === 'undefined' ? WIDTH : window.innerWidth - 16) }}
-            className="fixed z-50 flex flex-col gap-1 rounded-lg border border-[#E2E8F0] bg-white p-3 text-left font-sans text-sm leading-relaxed font-normal text-[#0F172A] normal-case shadow-lg shadow-slate-900/10"
+            className="fixed z-50 flex flex-col gap-1 outline-none rounded-lg border border-[#E2E8F0] bg-white p-3 text-left font-sans text-sm leading-relaxed font-normal text-[#0F172A] normal-case shadow-lg shadow-slate-900/10"
           >
             <span className="font-semibold text-[#2563EB]">{entry.title}</span>
             <span>

@@ -75,9 +75,86 @@ export const GLOSSARY = {
     body: 'IP addresses are personal data, so AuthGuard only stores a *salted SHA-256 hash*. It can still tell *same network vs. different network*, but the original address cannot be recovered.',
     aliases: ['IP hash', 'hashed IP'],
   },
+  'auth-event': {
+    title: 'Event',
+    body: 'One thing a connected app reported through the AuthGuard SDK, such as a login, a failed login or a page view by a signed-in user. Events carry *hashes and short ids only*, never passwords or raw addresses. Alerts are computed from the *last 7 days* of events.',
+    aliases: [],
+  },
+  'session-id': {
+    title: 'Session id',
+    body: 'An id that Supabase puts inside the access token and keeps for the *whole login*, even when the token is refreshed. It lets AuthGuard group every request of one login together, which is how *session reuse* is spotted.',
+    aliases: ['session id'],
+  },
+  'user-ref': {
+    title: 'User ref',
+    body: 'The *user id* the connected app gave this account, shortened here to its first characters. It identifies an account without showing its email.',
+    aliases: ['user ref'],
+  },
+  'email-hash': {
+    title: 'Email hash',
+    body: 'The email address after a *salted SHA-256 hash*. The same email always gives the same hash, so failed logins for one account can be counted, but the address itself *cannot be read back*.',
+    aliases: ['email hash'],
+  },
+  'event-login-success': {
+    title: 'login_success',
+    body: 'A user signed in with the right password, or through Google. Logins from a *new device* or right after many failures are what the rules look at.',
+    aliases: ['login_success'],
+  },
+  'event-login-failed': {
+    title: 'login_failed',
+    body: 'A sign-in attempt with a *wrong email or password*. One is normal; *many in a few minutes* for the same email is a failed-login burst.',
+    aliases: ['login_failed'],
+  },
+  'event-signup': {
+    title: 'signup',
+    body: 'A new account was created in the connected app.',
+    aliases: [],
+  },
+  'event-password-check': {
+    title: 'password_check',
+    body: 'The SDK scored a password *on the app\'s own server* at signup or login: its *strength* (0 to 4) and whether it appears in *public breach data*. The password itself is never sent.',
+    aliases: ['password_check'],
+  },
+  'event-session-seen': {
+    title: 'session_seen',
+    body: 'A signed-in user opened a page. The SDK sends the *session id*, a few claims, the browser and a hashed network, at most once every 5 minutes per device.',
+    aliases: ['session_seen'],
+  },
+  'event-token-invalid': {
+    title: 'token_invalid',
+    body: 'A request carried a session cookie that Supabase *rejected*: edited, forged, revoked or expired. A database that is simply *asleep* is not reported this way.',
+    aliases: ['token_invalid'],
+  },
+  'severity-high': {
+    title: 'High severity',
+    body: 'Something that may mean an account is *already at risk*, such as a session used from another device or a guessed password. High alerts are *emailed* and appear in the bell.',
+    aliases: [],
+  },
+  'severity-medium': {
+    title: 'Medium severity',
+    body: 'A warning sign worth checking, such as repeated failed logins or a weak password. Medium alerts are *emailed* and appear in the bell.',
+    aliases: [],
+  },
+  'severity-low': {
+    title: 'Low severity',
+    body: 'Information that is *usually harmless*, such as a login from a new browser or a network change. Low alerts appear in the list only, *without email*.',
+    aliases: [],
+  },
 } as const satisfies Record<string, GlossaryEntry>
 
 export type GlossaryTerm = keyof typeof GLOSSARY
+
+// Event type -> the glossary entry that explains it.
+export const EVENT_TERMS: Record<string, GlossaryTerm> = {
+  login_success: 'event-login-success',
+  login_failed: 'event-login-failed',
+  signup: 'event-signup',
+  password_check: 'event-password-check',
+  session_seen: 'event-session-seen',
+  token_invalid: 'event-token-invalid',
+}
+
+export const SEVERITY_TERMS = { high: 'severity-high', medium: 'severity-medium', low: 'severity-low' } as const satisfies Record<string, GlossaryTerm>
 
 // Detection rule id -> the glossary entry that explains it.
 export const RULE_TERMS: Record<string, GlossaryTerm> = {
