@@ -2,6 +2,63 @@
 
 Audited on **2026-10-19** at commit `0984197` (`main`). This replaces the audit of 2026-10-10; the status of its items is in Part 5.
 
+## Fixes of 2026-10-26
+
+Most findings below were fixed on 2026-10-26. Each item keeps its original text further down; this table gives the status.
+
+| Item | Status | What changed |
+|---|---|---|
+| 1.1 No timeout on Supabase requests | **Fixed** | Every Supabase client (both products, proxy, admin) uses `fetchWithTimeout()` (5 s per request), and the settings check has a 3 s limit |
+| 1.2 Outage treated as forged token | **Fixed** | The proxy checks *why* `getUser()` failed (`isSupabaseUnavailable`). On an outage it doesn't report `token_invalid`, keeps the cookie, and sends protected pages to `login?error=unavailable` |
+| 1.3 Generic error when the database is down | **Fixed** | Login, signup, callback and confirm show "Sign-in isn't available right now: this demo's database is paused… Email … and it will be switched back on." with a mail link. The login and signup pages also check the project before anyone types |
+| 1.4 Two Supabase round trips per page | **Partly fixed** | When the proxy already found Supabase unreachable, it tells the page (a request header it always strips from the incoming request first), so the page doesn't wait again. In normal operation there are still two checks |
+| 1.5 Confirmation link in another browser | **Improved** | The message now says the link may have been opened in a different browser and suggests logging in. Switching the email templates to `/auth/confirm` is still a dashboard setting (see README) |
+| 1.6 AuthGuard always shows Google | **Fixed** | Both products show the Google button only when the project has Google enabled |
+| 1.7 (new) Returning users waited about 25 s while the database was asleep | **Fixed** | Found while testing the fixes: with an expired access token, supabase-js retries the refresh for up to 30 s. `getUserWithin()` caps each sign-in check at 6 s |
+| 2.2 Console page has almost no pop-ups | **Fixed** | Pop-ups on severity badges, alert summaries, rule ids, subjects, stat tiles, every table header and every event type (new glossary entries). Alert cards use a stretched title link, so terms inside them can be hovered |
+| 2.4 Selecting text closes a pop-up | **Fixed** | Focus moving into the pop-up no longer closes it. "First mention only" is kept on purpose |
+| 3.1 No security headers | **Fixed** | `frame-ancestors 'none'`, `X-Frame-Options: DENY`, `Referrer-Policy`, `X-Content-Type-Options`, `Permissions-Policy` on every response. A full CSP is still open (needs nonces) |
+| 3.2 One shared API key, unscoped reads | Open | Needs a per-app key design; fine while there is one demo app |
+| 3.3 Raw user agent in AI prompts | **Fixed** | The assistant, explain and report prompts get the browser/OS family ("Chrome\|Windows"), not the raw header |
+| 3.4 Demo mode opens data to every confirmed account | Unchanged | Intended behaviour |
+| 3.5 Any `?error=` text displayed | **Fixed** | Redirects carry only a code (`unavailable`, `oauth_failed`, `link_incomplete`, `link_expired`, `google_unavailable`). Unknown codes show nothing |
+| 3.6 Origin from forwarded headers | **Fixed for redirects** | Optional `SITE_URL` is used for auth redirects, `emailRedirectTo` and email links. The IP hash still uses `x-forwarded-for` (set by the host) |
+| 3.7 No app-level rate limiting | Open | Supabase Auth's own limits still apply |
+| 3.8 / 3.9 Dependency advisories | **Fixed** | See 3.9 below. `pnpm audit --prod` now reports no known vulnerabilities |
+| 4.2 Alert ids can shift | Open | Needs a decision on what makes two alerts "the same" |
+| 4.3 Legacy SQL | **Fixed** | `scripts/001_init.sql` deleted (it stays in git history) |
+| 4.4 Build artefacts committed | **Fixed** | `tsconfig.tsbuildinfo` and `next-env.d.ts` untracked and ignored |
+| 4.5 Werkstatt helper among AuthGuard services | **Fixed** | Moved to `lib/werkstatt/auth-context.ts` |
+| 4.6 Two `cn()` implementations | **Fixed** | All components use `@/lib/utils`; the `cn` package is removed |
+| 4.7 Package name | **Fixed** | `authguard` |
+| 4.8 Technical text on the AuthGuard error page | **Fixed** | Same neutral wording as Werkstatt |
+
+**3.9 (new) Next.js and dependency advisories — Critical, fixed.** Since the 19 October audit, advisories were published for `next` 16.0.0–16.4.0, including two critical remote-code-execution issues ([GHSA-2464-fhr4-w9xw](https://github.com/advisories/GHSA-2464-fhr4-w9xw), [GHSA-673q-mjm6-r5xr](https://github.com/advisories/GHSA-673q-mjm6-r5xr)) and a server-action denial of service ([GHSA-p3m5-59mp-jv5r](https://github.com/advisories/GHSA-p3m5-59mp-jv5r)). There was also one for `zod` < 4.6.6 and one for `undici` < 7.30.1, which the AI SDK uses. The fix:
+- `next` 16.4.0 → **16.4.3**
+- `zod` → **4.6.7**
+- `undici` → **7.30.1** (lockfile)
+- `shadcn` (a command-line tool; the app only needs its stylesheet at build time) moved to `devDependencies` and pinned to the version already in use, 4.21.4.
+
+**How the fixes were tested.** A fake Supabase server simulated four states: refusing connections, never answering, paused (an HTML 540 page), and up (rejecting a bad session, or accepting a login). Results, on both `next dev` and `next start`:
+
+| Situation | Before | After |
+|---|---|---|
+| Login page, database not answering | no response after 70 s | loads in 3 s with the "database is paused" message |
+| Signed-in page, database not answering (expired token) | 25 s or more, then logged out; "tampered token" alert sent | 6 s, then the login page with the message; no alert; cookie kept |
+| Paused project (540 page) | generic "Something went wrong" | message shown instantly |
+| Database up, forged session | redirect + `token_invalid` | unchanged: redirect + `token_invalid` (still detected) |
+| Browser sends the internal "unavailable" header itself | — | ignored (stripped by the proxy) |
+| Successful login on both products | works | works |
+| `/authguard/login?error=<any text>` | text shown | nothing shown; only known codes show a message |
+
+Also checked:
+- **Pop-ups:** all 36 on a test page with sample alerts and events opened on hover, with no console errors. Clicking a term opens its pop-up; clicking elsewhere on the card opens the alert.
+- **Security headers:** present on every response.
+- **Production build:** `next build` passes. This was checked with `--webpack` and stubbed Google Fonts, because the test machine can't reach Google Fonts.
+- **Types:** `tsc --noEmit` passes.
+
+Still not tested: the real Supabase projects, the dashboard settings and the deployed site.
+
 ## How this audit was done
 
 Unlike the previous audit, this one ran the code instead of only reading it:

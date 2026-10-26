@@ -6,7 +6,7 @@ AuthGuard monitors the sign-in security of a web app and explains what it finds 
 > The woodworking school under `/werkstatt` is a fictional app. It exists only to have something for AuthGuard to monitor, and to show AuthGuard working on top of it. You can't book classes there, and it isn't a real business. Its accounts, notes and logins are demo data.
 
 > **The databases are not running 24/7.**
-> AuthGuard and Werkstatt each use a Supabase database that is paused after a period of inactivity (on Supabase's Free plan, after 7 days of low activity). While a database is paused, signing up, logging in or loading the console will fail or be slow, usually with "Something went wrong while signing in". This is not a bug in the app.
+> AuthGuard and Werkstatt each use a Supabase database that is paused after a period of inactivity (on Supabase's Free plan, after 7 days of low activity). While a database is paused, the login and signup pages say so ("Sign-in isn't available right now…") and nobody can sign in. Signed-in users are sent to the login page with the same message; their session is kept and works again once the database is back. This is not a bug in the app.
 > **To try the demo, email Elise at [elise.hoimyr01630@laposte.net](mailto:elise.hoimyr01630@laposte.net)** and she will start the databases. You can email the same address with any other questions.
 
 ---
@@ -67,7 +67,7 @@ Stack: Next.js 16 (App Router, `proxy.ts`), React 19, TypeScript, Tailwind CSS 4
 1. **Werkstatt reports what happens.** On each login, signup and signed-in page view, Werkstatt's server calls the SDK. The SDK hashes the email and IP with a secret salt, scores the password locally (strength from 0 to 4, plus a breach check), and posts an event to AuthGuard. These calls run after the response is sent, have a 2-second timeout and ignore errors, so monitoring never slows down or breaks the login.
 2. **AuthGuard stores and checks.** The Events API verifies the API key, rejects any `password`, `token`, `email` or `ip` field, and stores the event. It then re-runs the detection rules on related events and records a notification for each new medium or high alert. If email is configured, it sends an email.
 3. **The console shows alerts.** Alerts are not stored: they are computed from the last 7 days of events each time the console loads. Each alert links to its evidence, and has "Explain" and "Report" buttons that call the AI.
-4. **Pop-up explanations.** Underlined security terms (for example *session reuse* or *breached password*) open a short explanation when you hover over them or tap them. These texts are written in advance in `lib/authguard/glossary.ts`; no AI is involved.
+4. **Pop-up explanations.** Underlined security terms (for example *session reuse* or *breached password*), event types, severity labels and the console's stat tiles and table headers open a short explanation when you hover over them or tap them. These texts are written in advance in `lib/authguard/glossary.ts`; no AI is involved.
 
 ## Pages and routes
 
@@ -76,9 +76,9 @@ Stack: Next.js 16 (App Router, `proxy.ts`), React 19, TypeScript, Tailwind CSS 4
 | Route | Access | Purpose |
 |---|---|---|
 | `/` | Public | Landing page, with hover explanations on the feature cards |
-| `/authguard/login`, `/authguard/signup` | Public | Console accounts (email and password; Google if enabled) |
+| `/authguard/login`, `/authguard/signup` | Public | Console accounts (email and password; the Google button appears only if Google is enabled in AuthGuard's project) |
 | `/authguard/auth/callback`, `/authguard/auth/confirm` | Public | OAuth / PKCE code exchange; email confirmation via `token_hash` |
-| `/authguard` | Signed in | Stat tiles, alert list, latest 50 events |
+| `/authguard` | Signed in | Stat tiles, alert list, latest 50 events (all with hover explanations) |
 | `/authguard/alerts/[id]` | Owner | One alert: summary, evidence, AI explanation and report |
 | `/authguard/sessions/[sessionId]` | Owner | Session claims (with AI "Explain" per claim) and timeline |
 | `/authguard/assistant` | Owner | Chat about the current alerts and events |
@@ -113,7 +113,7 @@ Only medium and high alerts create notifications and emails.
 
 ## Running it locally
 
-Requirements: Node.js 20.9 or newer and pnpm (the repo pins `pnpm@12.3.4`).
+Requirements: Node.js 20.9 or newer and pnpm (the repo pins `pnpm@12.3.4`). Next.js is pinned to 16.4.3, which contains the October 2026 security fixes.
 
 ```bash
 pnpm install
@@ -141,6 +141,7 @@ At startup, `instrumentation.ts` checks the environment. In production, missing 
 | `GOOGLE_GENERATIVE_AI_API_KEY`, `LLM_MODEL` | AI features | Gemini key; model defaults to `gemini-2.5-flash` |
 | `RESEND_API_KEY`, `AUTHGUARD_ALERT_EMAIL` | Optional | Send alert emails; without them, notifications still appear in the console |
 | `AUTHGUARD_PUBLIC_URL` | Optional | Base URL for links in emails |
+| `SITE_URL` | Recommended in production | Public URL of the site, e.g. `https://authguard.example.com`. Used for auth redirects and email links instead of the request's `Host` / `X-Forwarded-Host` headers. Leave it unset locally and on preview deployments |
 
 ## Supabase setup
 
@@ -153,8 +154,6 @@ You need **two** Supabase projects.
 
 **Werkstatt project.** Run `scripts/003_werkstatt_notes.sql` (the notes table with RLS).
 
-`scripts/001_init.sql` is from an earlier version and isn't needed.
-
 **In both projects, under Authentication:**
 - **URL configuration.** Set the Site URL and add the redirect URLs:
   - AuthGuard: `https://<your-domain>/authguard/auth/callback`
@@ -163,9 +162,11 @@ You need **two** Supabase projects.
 - **Email template ("Confirm signup").** To make confirmation links work in any browser, link to the confirm route:
   - AuthGuard: `{{ .SiteURL }}/authguard/auth/confirm?token_hash={{ .TokenHash }}&type=email`
   - Werkstatt: `{{ .SiteURL }}/werkstatt/auth/confirm?token_hash={{ .TokenHash }}&type=email`
-- **Google (optional).** Enable the Google provider. Werkstatt hides its Google button automatically when Google is off; AuthGuard always shows it.
+- **Google (optional).** Enable the Google provider. Both products hide their Google button automatically when Google is off.
 
 **Keeping the demo awake.** Supabase pauses Free-plan projects after 7 days of low activity, and a paused project has to be resumed from the Supabase dashboard ([Supabase docs](https://supabase.com/docs/guides/platform/free-project-pausing)). The two projects pause independently.
+
+**What the app does while a project is asleep.** Every Supabase request has a 5-second limit, and each sign-in check gives up after 6 seconds, so pages never hang. The login and signup pages check the project first and show a message with the contact email instead of a generic error. A database that can't be reached is never reported to AuthGuard as a tampered token; only sessions that Supabase actually rejects are.
 
 ## Connecting an app with the SDK
 
@@ -198,11 +199,10 @@ await guard.tokenInvalid({ request })                         // when a session 
 
 ## Known limitations
 
-- **Demo databases sleep** (see the note at the top). While a database is asleep, sign-in can hang or fail, and signed-in Werkstatt users are sent back to the login page. Details and fixes are in [AUDIT.md](AUDIT.md), items 1.1 to 1.3.
-- **No app onboarding yet:** there is one demo app, one shared API key, and no self-service way to connect an app.
+- **Demo databases sleep** (see the note at the top). While a database is asleep, nobody can sign in; the pages say so within a few seconds.
+- **No app onboarding yet:** there is one demo app, one shared API key, and no self-service way to connect an app. The console doesn't separate data by app yet.
 - **Alerts cover 7 days:** they're computed from the last 7 days of events (at most 2000 events), so older alerts and their links disappear.
-- **Pop-ups are mostly on detail pages:** hover explanations appear on the landing page, the alert detail page and the session page, but the main console page only has them on two table headers.
-- **Audit:** a full audit, including what was tested and how, is in [AUDIT.md](AUDIT.md).
+- **Audit:** the audit, what was fixed and what is still open, is in [AUDIT.md](AUDIT.md).
 
 ## Project structure
 
@@ -222,8 +222,9 @@ lib/
   authguard.ts              Werkstatt's SDK setup
   detection/                Detection engine and rules
   services/                 Console data, AI services, notifications, email
+  werkstatt/                Werkstatt's signed-in customer (auth-context.ts)
   repositories/             Database access
-  supabase/                 Supabase clients and session refresh, one folder per product
+  supabase/                 Supabase clients, session refresh, timeouts and outage detection, one folder per product
   ai/                       Gemini client and prompts
 scripts/                    SQL for the two Supabase projects
 proxy.ts                    Refreshes the session of whichever product is requested
